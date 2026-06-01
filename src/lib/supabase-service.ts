@@ -274,12 +274,14 @@ export async function createRoom(roomId: string, room: GameRoom): Promise<void> 
 
 // Fetch room to inspect status (primarily for join check)
 export async function getRoom(roomId: string): Promise<GameRoom | null> {
+  const normalizedId = roomId.toUpperCase().trim();
   try {
-    const { data, error } = await supabase.from('rooms').select('*').eq('id', roomId).single();
-    if (error || !data) {
+    const { data, error } = await supabase.from('rooms').select('*').eq('id', normalizedId).maybeSingle();
+    if (error) {
+      console.error('getRoom DB Error:', error);
       if (useBroadcastMode) {
         return {
-          id: roomId,
+          id: normalizedId,
           ownerId: '',
           status: 'waiting',
           difficulty: 'Fácil',
@@ -292,8 +294,10 @@ export async function getRoom(roomId: string): Promise<GameRoom | null> {
       }
       return null;
     }
+    if (!data) return null;
     return parseDBRoom(data);
   } catch (err) {
+    console.error('getRoom Catch Error:', err);
     return null;
   }
 }

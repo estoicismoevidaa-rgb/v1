@@ -8,27 +8,30 @@ import { createClient } from '@supabase/supabase-js';
 const HARDCODED_URL = 'https://qtcexymeadsenoycdvrk.supabase.co';
 const HARDCODED_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0Y2V4eW1lYWRzZW5veWNkdnJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTU5Nzk4MDMsImV4cCI6MjAzMTU1NTgwM30.Vp-7_8G_8-e6oU4S6S689QJ_5beQA-Fx';
 
+// Improved fallback logic to ignore placeholder strings like "undefined" or "null"
+const isValidStr = (val: any) => {
+  if (!val || typeof val !== 'string') return false;
+  const trimmed = val.trim();
+  return trimmed !== '' && trimmed !== 'undefined' && trimmed !== 'null' && trimmed !== '[object Object]' && !trimmed.startsWith('{{');
+};
+
 const VITE_URL = (import.meta as any).env?.VITE_SUPABASE_URL;
 const VITE_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY;
 
-// Improved fallback logic to ignore placeholder strings like "undefined" or "null"
-const isValid = (val: any) => val && typeof val === 'string' && val.trim() !== '' && val !== 'undefined' && val !== 'null';
+// Also check process.env for environments that might use it (like some build systems)
+const P_URL = typeof process !== 'undefined' ? process.env?.VITE_SUPABASE_URL : undefined;
+const P_KEY = typeof process !== 'undefined' ? process.env?.VITE_SUPABASE_ANON_KEY : undefined;
 
-let SUPABASE_URL = isValid(VITE_URL) ? VITE_URL.trim() : HARDCODED_URL;
-let SUPABASE_ANON_KEY = isValid(VITE_KEY) ? VITE_KEY.trim() : HARDCODED_KEY;
+const FINAL_URL = isValidStr(VITE_URL) ? VITE_URL : (isValidStr(P_URL) ? P_URL : HARDCODED_URL);
+const FINAL_KEY = isValidStr(VITE_KEY) ? VITE_KEY : (isValidStr(P_KEY) ? P_KEY : HARDCODED_KEY);
 
-// Sanitize URL: Remove trailing slash and specifically /rest/v1 if included by mistake
-SUPABASE_URL = SUPABASE_URL.replace(/\/$/, '').replace(/\/rest\/v1$/, '');
+const SUPABASE_URL = FINAL_URL.trim().replace(/\/$/, '').replace(/\/rest\/v1$/, '');
+const SUPABASE_ANON_KEY = FINAL_KEY.trim();
 
-if (!SUPABASE_URL.startsWith('http')) {
-  console.error('Supabase URL must start with http/https');
-}
-
-console.log('Fruit Memory Supabase Init:', {
+console.log('Fruit Memory Supabase Status:', {
   endpoint: SUPABASE_URL,
-  keyPrefix: SUPABASE_ANON_KEY.substring(0, 6) + '...',
-  keySuffix: '...' + SUPABASE_ANON_KEY.substring(SUPABASE_ANON_KEY.length - 6),
-  source: VITE_KEY ? 'Environment Secret' : 'Hardcoded Default'
+  source: isValidStr(VITE_URL) ? 'Vite Env' : (isValidStr(P_URL) ? 'Process Env' : 'Hardcoded Fallback'),
+  keyOk: SUPABASE_ANON_KEY.length > 20
 });
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

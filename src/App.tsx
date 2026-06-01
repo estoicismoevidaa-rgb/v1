@@ -93,8 +93,9 @@ export default function App() {
 
   const navigateAfterAuth = useCallback(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('room')) {
-      console.log('Detected room in URL, navigating to online config');
+    const roomParam = params.get('room');
+    if (roomParam) {
+      console.log('Detected room in URL:', roomParam);
       setMode('online');
       setScreen('online-config');
     } else {

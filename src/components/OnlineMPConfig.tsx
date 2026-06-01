@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, Globe, Key, User } from 'lucide-react';
 import { Difficulty } from '../types.ts';
@@ -30,6 +30,28 @@ export function OnlineMPConfig({ onBack, onCreate, onJoin, initialNickname = '' 
   const [isSearching, setIsSearching] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [roomFound, setRoomFound] = useState<any>(null);
+
+  // Auto-search if coming from URL
+  useEffect(() => {
+    if (initialRoomId) {
+      const autoSearch = async () => {
+        setIsSearching(true);
+        try {
+          const { getRoom } = await import('../lib/supabase-service.ts');
+          const data = await getRoom(initialRoomId.toUpperCase());
+          if (data) {
+            setRoomFound(data);
+            setStep('password');
+          }
+        } catch (err) {
+          console.error('Auto-search error:', err);
+        } finally {
+          setIsSearching(false);
+        }
+      };
+      autoSearch();
+    }
+  }, [initialRoomId]);
 
   const handleCreate = async () => {
     if (isCreating) return;
