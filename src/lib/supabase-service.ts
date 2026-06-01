@@ -288,8 +288,9 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
           uid: userId,
           online_at: new Date().toISOString(),
         });
-        // One safety refresh right after subscription
-        setTimeout(refreshRoom, 1000);
+        // Immediate safety refresh and another after 1s for slow DB nodes
+        refreshRoom();
+        setTimeout(refreshRoom, 1500);
       }
     });
 

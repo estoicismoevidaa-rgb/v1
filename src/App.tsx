@@ -217,7 +217,10 @@ export default function App() {
             if (freshRoom.status !== onlineRoom.status || 
                 freshRoom.players.length !== onlineRoom.players.length ||
                 freshRoom.currentPlayerIndex !== onlineRoom.currentPlayerIndex) {
-              setOnlineRoom(prev => ({ ...prev, ...freshRoom }));
+              setOnlineRoom(freshRoom);
+              setPlayers(freshRoom.players);
+              setCards(freshRoom.cards);
+              setGameStatus(freshRoom.status);
             }
           }
         } catch (e) {
@@ -240,10 +243,7 @@ export default function App() {
             if (isUnsubscribed) return;
             if (data) {
               // Ensure we merge states carefully
-              setOnlineRoom(prev => {
-                if (!prev) return data;
-                return { ...prev, ...data };
-              });
+              setOnlineRoom(data);
               setCards(data.cards || []);
               setPlayers(data.players || []);
               setCurrentPlayerIndex(data.currentPlayerIndex ?? 0);

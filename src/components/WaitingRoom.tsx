@@ -83,7 +83,7 @@ export function WaitingRoom({ room, userId, onStart, onLeave }: WaitingRoomProps
 
           <div className="mb-8 flex-grow">
             <h3 className="text-sm font-black text-blue-200 mb-4 flex items-center gap-2 uppercase tracking-tight">
-              <User className="w-4 h-4 text-blue-400" /> Jogadores ({room.players.length}/6)
+              <User className="w-4 h-4 text-blue-400" /> Jogadores ({room.players.length} / {room.maxPlayers || 6})
             </h3>
             <div className="space-y-3">
               {room.players.map((p, i) => (
