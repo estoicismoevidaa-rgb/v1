@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    function isValidRoom(data) {
+      return data.ownerId is string &&
+             data.status in ['waiting', 'playing', 'finished'] &&
+             data.difficulty in ['Fácil', 'Médio', 'Difícil', 'Extremo'] &&
+             data.players is list &&
+             data.cards is list &&
+             data.currentPlayerIndex is number &&
+             data.players.size() <= 6 &&
+             data.cards.size() <= 48;
+    }
+
+    match /rooms/{roomId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn(); // In this game, players can see available rooms? Or just by link? The prompt says "Online por Link". 
+      // If by link, they need 'get'. If they can search, they need 'list'.
+      
+      allow create: if isSignedIn() && 
+                      isValidId(roomId) &&
+                      isValidRoom(incoming()) &&
+                      incoming().ownerId == request.auth.uid &&
+                      incoming().status == 'waiting';
+
+      allow update: if isSignedIn() &&
+                      isValidRoom(incoming()) &&
+                      (
+                        // Action: Join Room
+                        (existing().status == 'waiting' && 
+                         incoming().diff(existing()).affectedKeys().hasOnly(['players'])) ||
+                        
+                        // Action: Start Game (Owner only)
+                        (existing().ownerId == request.auth.uid && 
+                         existing().status == 'waiting' &&
+                         incoming().status == 'playing' &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'cards', 'currentPlayerIndex', 'gameStartedAt', 'updatedAt'])) ||
+                        
+                        // Action: Game Action (Current player only)
+                        (existing().status == 'playing' &&
+                         existing().players[existing().currentPlayerIndex].uid == request.auth.uid &&
+                         incoming().diff(existing()).affectedKeys().hasAny(['cards', 'currentPlayerIndex', 'players', 'status', 'updatedAt'])) ||
+
+                        // Action: Leave Room
+                        (incoming().diff(existing()).affectedKeys().hasOnly(['players']))
+                      );
+      
+      allow delete: if isSignedIn() && existing().ownerId == request.auth.uid;
+    }
+  }
+}

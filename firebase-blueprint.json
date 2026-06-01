@@ -1,0 +1,27 @@
+{
+  "entities": {
+    "Room": {
+      "title": "Room",
+      "description": "A game room for online multiplayer",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "description": "UID of the room creator" },
+        "status": { "type": "string", "enum": ["waiting", "playing", "finished"] },
+        "difficulty": { "type": "string", "enum": ["Fácil", "Médio", "Difícil", "Extremo"] },
+        "players": { "type": "array", "description": "List of players in the room" },
+        "cards": { "type": "array", "description": "The deck of cards for the game" },
+        "currentPlayerIndex": { "type": "number", "description": "Index of the player whose turn it is" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "gameStartedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "status", "difficulty", "players", "cards", "currentPlayerIndex"]
+    }
+  },
+  "firestore": {
+    "/rooms/{roomId}": {
+      "schema": "Room",
+      "description": "Collection of game rooms"
+    }
+  }
+}
