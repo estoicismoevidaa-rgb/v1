@@ -57,8 +57,8 @@ export function AuthScreen({ onAuthenticated, currentUid }: AuthScreenProps) {
     } catch (err: any) {
       console.error('Auth flow error:', err);
       let msg = err.message || 'Ocorreu um erro ao processar seu pedido. Tente novamente.';
-      if (msg.toLowerCase().includes('api key') || msg.toLowerCase().includes('chave de api') || msg.toLowerCase().includes('invalid')) {
-        msg = 'Erro de Conexão: A Chave de API está inválida ou o projeto Supabase foi pausado. Por favor, verifique as chaves VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY nas configurações ou jogue como convidado.';
+      if (msg.toLowerCase().includes('api key') || msg.toLowerCase().includes('chave de api') || msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('fetch')) {
+        msg = 'Erro de Conexão: Não foi possível conectar ao servidor. Verifique sua internet ou jogue como convidado.';
       }
       setError(msg);
     } finally {
@@ -229,15 +229,6 @@ export function AuthScreen({ onAuthenticated, currentUid }: AuthScreenProps) {
                   <AlertCircle className="w-5 h-5 flex-shrink-0" />
                   <p>{error}</p>
                 </div>
-                {error.includes('Erro de Conexão') && (
-                  <button
-                    type="button"
-                    onClick={handleGuestMode}
-                    className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-blue-400 rounded-xl text-xs font-bold transition-all border border-blue-500/20"
-                  >
-                    Continuar como Convidado (Modo Offline)
-                  </button>
-                )}
               </motion.div>
             )}
 
@@ -275,6 +266,14 @@ export function AuthScreen({ onAuthenticated, currentUid }: AuthScreenProps) {
             ) : (
               mode === 'login' ? 'Entrar no Jogo' : 'Cadastrar'
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleGuestMode}
+            className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-2xl font-bold text-sm transition-all border border-white/5 flex items-center justify-center gap-2"
+          >
+            Continuar sem Conta (Modo Convidado)
           </button>
         </form>
 
