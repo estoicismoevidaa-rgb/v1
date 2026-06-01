@@ -60,13 +60,22 @@ function parseDBRoom(data: any): GameRoom {
 // Subscribe to room changes: Either via Postgres changes or Broadcast channel
 export async function subscribeToRoom(roomId: string, callback: (room: GameRoom) => void): Promise<() => void> {
   const isDBActive = await checkTableExistence();
+  const userId = getOrCreateUserId();
   
-  // Use a unique sub-header to avoid "already subscribed" errors if reused
-  const speedChannelId = `speed-room-${roomId}-${Math.random().toString(36).substring(7)}`;
-  const speedChannel = supabase.channel(speedChannelId)
+  // 1. Initial Fetch to populate local state
+  const initialRoom = await getRoom(roomId);
+  if (initialRoom) {
+    currentLocalRoomState = initialRoom;
+    callback(initialRoom);
+  }
+
+  // 2. Setup Realtime Channel for Presence and Fast Signaling
+  const channelId = `room-${roomId}-${Math.random().toString(36).substring(7)}`;
+  const channel = supabase.channel(channelId);
+
+  channel
     .on('presence', { event: 'sync' }, () => {
-      const state = speedChannel.presenceState();
-      // Map presence to UIDs
+      const state = channel.presenceState();
       const onlineUids = Object.values(state).flat().map((p: any) => p.uid);
       
       if (currentLocalRoomState) {
@@ -78,133 +87,40 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
         callback(currentLocalRoomState);
       }
     })
-    .on('broadcast', { event: 'player_joined' }, async () => {
-      // Force refresh data from DB when someone joins
-      if (isDBActive) {
-        const room = await getRoom(roomId);
-        if (room) callback(room);
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` }, (payload) => {
+      if (payload.new && Object.keys(payload.new).length > 0) {
+        const room = parseDBRoom(payload.new);
+        // Preserve online status from current local state when merging DB update
+        const onlineUids = Object.values(channel.presenceState()).flat().map((p: any) => p.uid);
+        room.players = room.players.map(p => ({
+          ...p,
+          isOnline: onlineUids.includes(p.uid)
+        }));
+        currentLocalRoomState = room;
+        callback(room);
+      } else if (payload.eventType === 'DELETE') {
+        callback({ id: roomId, ownerId: '', status: 'finished', difficulty: 'Fácil', players: [], cards: [], currentPlayerIndex: 0, createdAt: '', updatedAt: '', maxPlayers: 2, isPublic: false });
       }
     })
-    .on('broadcast', { event: 'player_left' }, async () => {
-      if (isDBActive) {
-        const room = await getRoom(roomId);
-        if (room) callback(room);
+    .on('broadcast', { event: 'force_refresh' }, async () => {
+      const room = await getRoom(roomId);
+      if (room) {
+        currentLocalRoomState = room;
+        callback(room);
       }
-    })
-    .on('broadcast', { event: 'state_pushed' }, (payload) => {
-      // Partially merge updates received via broadcast if we have current state
-      if (currentLocalRoomState) {
-        currentLocalRoomState = { ...currentLocalRoomState, ...payload.payload };
-        callback(currentLocalRoomState);
-      }
-    })
-    .on('broadcast', { event: 'room_deleted' }, () => {
-      // Room was deleted, trigger exit
-      callback({ id: roomId, ownerId: '', status: 'finished', difficulty: 'Fácil', players: [], cards: [], currentPlayerIndex: 0, createdAt: '', updatedAt: '', maxPlayers: 2, isPublic: false });
     })
     .subscribe(async (status: string) => {
       if (status === 'SUBSCRIBED') {
-        const uid = getOrCreateUserId();
-        await speedChannel.track({
-          uid,
+        await channel.track({
+          uid: userId,
           online_at: new Date().toISOString(),
         });
       }
     });
 
-  if (isDBActive) {
-    // Standard Supabase DB Change Listener
-    const dbChannelId = `db-rooms-${roomId}-${Math.random().toString(36).substring(7)}`;
-    const channel = supabase
-      .channel(dbChannelId)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
-        (payload) => {
-          if (payload.new && Object.keys(payload.new).length > 0) {
-            const room = parseDBRoom(payload.new);
-            currentLocalRoomState = room;
-            callback(room);
-          } else if (payload.eventType === 'DELETE') {
-            // Room deleted
-            callback({ id: roomId, ownerId: '', status: 'finished', difficulty: 'Fácil', players: [], cards: [], currentPlayerIndex: 0, createdAt: '', updatedAt: '', maxPlayers: 2, isPublic: false });
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-      supabase.removeChannel(speedChannel);
-    };
-  } else {
-    // Direct Broadcast fallback channel
-    broadcastCallback = callback;
-    broadcastChannel = supabase.channel(`room_broadcast_${roomId}`, {
-      config: { broadcast: { self: true } }
-    });
-
-    broadcastChannel
-      .on('broadcast', { event: 'state_changed' }, ({ payload }: any) => {
-        if (payload) {
-          currentLocalRoomState = payload;
-          if (broadcastCallback) broadcastCallback(payload);
-        }
-      })
-      .on('broadcast', { event: 'player_joined' }, ({ payload }: any) => {
-        // Only the room owner (host) processes player joining and publishes the updated state
-        const currentUid = getOrCreateUserId();
-        if (currentLocalRoomState && currentLocalRoomState.ownerId === currentUid) {
-          const exists = currentLocalRoomState.players.some((p: Player) => p.uid === payload.uid);
-          if (!exists) {
-            const updatedPlayers = [...currentLocalRoomState.players, payload];
-            const updatedState = {
-              ...currentLocalRoomState,
-              players: updatedPlayers,
-              updatedAt: new Date().toISOString()
-            };
-            currentLocalRoomState = updatedState;
-            broadcastRoomState(roomId, updatedState);
-          }
-        }
-      })
-      .on('broadcast', { event: 'player_left' }, ({ payload }: any) => {
-        const currentUid = getOrCreateUserId();
-        if (currentLocalRoomState && currentLocalRoomState.ownerId === currentUid) {
-          const updatedPlayers = currentLocalRoomState.players.filter((p: Player) => p.uid !== payload.uid);
-          const updatedState = {
-            ...currentLocalRoomState,
-            players: updatedPlayers,
-            updatedAt: new Date().toISOString()
-          };
-          currentLocalRoomState = updatedState;
-          broadcastRoomState(roomId, updatedState);
-        }
-      })
-      .on('broadcast', { event: 'request_state' }, () => {
-        // When someone requests the current state, if we are the host, we send it
-        const currentUid = getOrCreateUserId();
-        if (currentLocalRoomState && currentLocalRoomState.ownerId === currentUid) {
-          broadcastRoomState(roomId, currentLocalRoomState);
-        }
-      })
-      .subscribe((status: string) => {
-        if (status === 'SUBSCRIBED') {
-          // If we joined, request the state from the host
-          broadcastChannel.send({
-            type: 'broadcast',
-            event: 'request_state',
-            payload: {}
-          });
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(broadcastChannel);
-      broadcastChannel = null;
-      broadcastCallback = null;
-    };
-  }
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }
 
 // Safely broadcast the state manually for broadcast Fallback
@@ -308,7 +224,6 @@ export async function getRoom(roomId: string): Promise<GameRoom | null> {
 export async function updateRoom(roomId: string, updates: Partial<GameRoom>): Promise<void> {
   const isDBActive = await checkTableExistence();
   if (isDBActive) {
-    // Map properties back to DB snake_case fields
     const dbUpdates: any = {};
     if (updates.status !== undefined) dbUpdates.status = updates.status;
     if (updates.difficulty !== undefined) dbUpdates.difficulty = updates.difficulty;
@@ -320,15 +235,14 @@ export async function updateRoom(roomId: string, updates: Partial<GameRoom>): Pr
 
     await supabase.from('rooms').update(dbUpdates).eq('id', roomId);
     
-    // Notify via broadcast too for speed
-    const msgChannelId = `state-msg-${roomId}-${Math.random().toString(36).substring(7)}`;
-    const channel = supabase.channel(msgChannelId);
+    // Notify via broadcast for immediate refresh on all clients
+    const channel = supabase.channel(`room-refresh-${roomId}`);
     channel.subscribe((status: string) => {
       if (status === 'SUBSCRIBED') {
         channel.send({
           type: 'broadcast',
-          event: 'state_pushed',
-          payload: updates
+          event: 'force_refresh',
+          payload: {}
         });
         setTimeout(() => supabase.removeChannel(channel), 1000);
       }
@@ -347,47 +261,45 @@ export async function updateRoom(roomId: string, updates: Partial<GameRoom>): Pr
 
 // Join a room
 export async function joinRoom(roomId: string, player: Player): Promise<void> {
-  const currentRoom = await getRoom(roomId);
-  if (!currentRoom) throw new Error('Sala não encontrada');
+  const isDBActive = await checkTableExistence();
   
-  const isDBActive = !useBroadcastMode;
   if (isDBActive) {
-    // Check if player already added
-    const exists = currentRoom.players.some(p => p.uid === player.uid);
+    // Force fresh fetch to avoid overwriting other recently joined players
+    const { data } = await supabase.from('rooms').select('players').eq('id', roomId).single();
+    if (!data) throw new Error('Sala não encontrada');
+    
+    const currentPlayers: Player[] = typeof data.players === 'string' ? JSON.parse(data.players) : (data.players || []);
+    const exists = currentPlayers.some(p => p.uid === player.uid);
+    
     if (!exists) {
-      const updatedPlayers = [...currentRoom.players, player];
+      const updatedPlayers = [...currentPlayers, player];
       await supabase
         .from('rooms')
         .update({ players: updatedPlayers, updated_at: new Date().toISOString() })
         .eq('id', roomId);
         
-      // Crucial: Send broadcast to wake up host
-      const joinChannelId = `join-msg-${roomId}-${Math.random().toString(36).substring(7)}`;
-      const channel = supabase.channel(joinChannelId);
+      // Broadcast force refresh
+      const channel = supabase.channel(`room-refresh-${roomId}`);
       channel.subscribe((status: string) => {
         if (status === 'SUBSCRIBED') {
           channel.send({
             type: 'broadcast',
-            event: 'player_joined',
-            payload: player
+            event: 'force_refresh',
+            payload: {}
           });
           setTimeout(() => supabase.removeChannel(channel), 1000);
         }
       });
     }
   } else {
-    // Broadcast fallback
-    const fallbackChannelId = `room_broadcast_${roomId}`;
-    const channel = supabase.channel(fallbackChannelId);
-    channel.subscribe((status: string) => {
-      if (status === 'SUBSCRIBED') {
-        channel.send({
-          type: 'broadcast',
-          event: 'player_joined',
-          payload: player
-        });
+    // Broadcast fallback for non-DB mode
+    if (currentLocalRoomState) {
+      const exists = currentLocalRoomState.players.some(p => p.uid === player.uid);
+      if (!exists) {
+        currentLocalRoomState.players.push(player);
+        broadcastRoomState(roomId, currentLocalRoomState);
       }
-    });
+    }
   }
 }
 
@@ -414,7 +326,7 @@ export async function leaveRoom(roomId: string, userId: string): Promise<void> {
   if (!currentRoom) return;
   
   if (currentRoom.ownerId === userId) {
-    // Host leaves, delete the room so it "disappears"
+    // Host leaves, delete the room
     await deleteRoom(roomId);
   } else {
     const updatedPlayers = currentRoom.players.filter(p => p.uid !== userId);
@@ -426,15 +338,14 @@ export async function leaveRoom(roomId: string, userId: string): Promise<void> {
         .eq('id', roomId);
     }
     
-    // Notify via broadcast
-    const leaveChannelId = `leave-msg-${roomId}-${Math.random().toString(36).substring(7)}`;
-    const channel = supabase.channel(leaveChannelId);
+    // Broadcast force refresh
+    const channel = supabase.channel(`room-refresh-${roomId}`);
     channel.subscribe((status: string) => {
       if (status === 'SUBSCRIBED') {
         channel.send({
           type: 'broadcast',
-          event: 'player_left',
-          payload: { uid: userId }
+          event: 'force_refresh',
+          payload: {}
         });
         setTimeout(() => supabase.removeChannel(channel), 1000);
       }
