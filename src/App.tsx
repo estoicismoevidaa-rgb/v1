@@ -200,6 +200,13 @@ export default function App() {
 
   // Online listener
   useEffect(() => {
+    if (mode === 'online' && onlineRoom?.status === 'playing' && screen === 'waiting-room') {
+      setScreen('game');
+    }
+  }, [mode, onlineRoom?.status, screen]);
+
+  // Online listener for room updates
+  useEffect(() => {
     if (mode === 'online' && onlineRoom?.id) {
       let isUnsubscribed = false;
       let unsubscribeFn: (() => void) | null = null;

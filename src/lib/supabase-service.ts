@@ -222,12 +222,12 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
   }
 
   // 2. Setup Realtime Channel for Presence and Fast Signaling
-  const channelId = `room:${roomId}`;
+  const channelId = `room-signal:${roomId}`;
   
-  // Cleanup any existing channel with this ID in this client to avoid "already subscribed" errors
+  // Cleanup any existing channel with this ID in this client
   const existingChannel = (supabase as any).getChannels?.().find((c: any) => c.name === channelId);
   if (existingChannel) {
-    supabase.removeChannel(existingChannel);
+    supabase.removeChannel(existingChannel).catch(() => {});
   }
 
   const channel = supabase.channel(channelId);
@@ -265,9 +265,21 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
     .on('broadcast', { event: 'force_refresh' }, async () => {
       const room = await getRoom(roomId);
       if (room) {
+        // Preserve online status from current local state when merging DB update
+        const onlineUids = Object.values(channel.presenceState()).flat().map((p: any) => p.uid);
+        room.players = room.players.map(p => ({
+          ...p,
+          isOnline: onlineUids.includes(p.uid)
+        }));
         currentLocalRoomState = room;
         callback(room);
+      } else {
+        // Not found, maybe deleted
+        callback(null as any);
       }
+    })
+    .on('broadcast', { event: 'room_deleted' }, () => {
+      callback(null as any);
     })
     .subscribe(async (status: string) => {
       if (status === 'SUBSCRIBED') {
@@ -396,7 +408,7 @@ export async function updateRoom(roomId: string, updates: Partial<GameRoom>): Pr
     await supabase.from('rooms').update(dbUpdates).eq('id', roomId);
     
     // Notify via broadcast for immediate refresh on all clients
-    const sigId = `signal:${roomId}`;
+    const sigId = `room-signal:${roomId}`;
     const channel = supabase.channel(sigId);
     channel.subscribe((status: string) => {
       if (status === 'SUBSCRIBED') {
@@ -440,7 +452,7 @@ export async function joinRoom(roomId: string, player: Player): Promise<void> {
         .eq('id', roomId);
         
       // Broadcast force refresh
-      const sigId = `signal:${roomId}`;
+      const sigId = `room-signal:${roomId}`;
       const channel = supabase.channel(sigId);
       channel.subscribe((status: string) => {
         if (status === 'SUBSCRIBED') {
@@ -468,8 +480,8 @@ export async function joinRoom(roomId: string, player: Player): Promise<void> {
 // Delete room permanently
 export async function deleteRoom(roomId: string): Promise<void> {
   await supabase.from('rooms').delete().eq('id', roomId);
-  const delChannelId = `del-msg-${roomId}-${Math.random().toString(36).substring(7)}`;
-  const channel = supabase.channel(delChannelId);
+  const sigId = `room-signal:${roomId}`;
+  const channel = supabase.channel(sigId);
   channel.subscribe((status: string) => {
     if (status === 'SUBSCRIBED') {
       channel.send({
@@ -501,7 +513,7 @@ export async function leaveRoom(roomId: string, userId: string): Promise<void> {
     }
     
     // Broadcast force refresh
-    const sigId = `signal:${roomId}`;
+    const sigId = `room-signal:${roomId}`;
     const channel = supabase.channel(sigId);
     channel.subscribe((status: string) => {
       if (status === 'SUBSCRIBED') {
