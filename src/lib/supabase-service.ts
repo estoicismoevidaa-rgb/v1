@@ -70,7 +70,7 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
   }
 
   // 2. Setup Realtime Channel for Presence and Fast Signaling
-  const channelId = `room-${roomId}-${Math.random().toString(36).substring(7)}`;
+  const channelId = `room:${roomId}`;
   const channel = supabase.channel(channelId);
 
   channel
@@ -236,7 +236,7 @@ export async function updateRoom(roomId: string, updates: Partial<GameRoom>): Pr
     await supabase.from('rooms').update(dbUpdates).eq('id', roomId);
     
     // Notify via broadcast for immediate refresh on all clients
-    const channel = supabase.channel(`room-refresh-${roomId}`);
+    const channel = supabase.channel(`room:${roomId}`);
     channel.subscribe((status: string) => {
       if (status === 'SUBSCRIBED') {
         channel.send({
@@ -279,7 +279,7 @@ export async function joinRoom(roomId: string, player: Player): Promise<void> {
         .eq('id', roomId);
         
       // Broadcast force refresh
-      const channel = supabase.channel(`room-refresh-${roomId}`);
+      const channel = supabase.channel(`room:${roomId}`);
       channel.subscribe((status: string) => {
         if (status === 'SUBSCRIBED') {
           channel.send({
@@ -339,7 +339,7 @@ export async function leaveRoom(roomId: string, userId: string): Promise<void> {
     }
     
     // Broadcast force refresh
-    const channel = supabase.channel(`room-refresh-${roomId}`);
+    const channel = supabase.channel(`room:${roomId}`);
     channel.subscribe((status: string) => {
       if (status === 'SUBSCRIBED') {
         channel.send({
