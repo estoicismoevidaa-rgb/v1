@@ -11,8 +11,11 @@ const HARDCODED_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const VITE_URL = (import.meta as any).env?.VITE_SUPABASE_URL;
 const VITE_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY;
 
-let SUPABASE_URL = (VITE_URL && VITE_URL.trim()) || HARDCODED_URL;
-let SUPABASE_ANON_KEY = (VITE_KEY && VITE_KEY.trim()) || HARDCODED_KEY;
+// Improved fallback logic to ignore placeholder strings like "undefined" or "null"
+const isValid = (val: any) => val && typeof val === 'string' && val.trim() !== '' && val !== 'undefined' && val !== 'null';
+
+let SUPABASE_URL = isValid(VITE_URL) ? VITE_URL.trim() : HARDCODED_URL;
+let SUPABASE_ANON_KEY = isValid(VITE_KEY) ? VITE_KEY.trim() : HARDCODED_KEY;
 
 // Sanitize URL: Remove trailing slash and specifically /rest/v1 if included by mistake
 SUPABASE_URL = SUPABASE_URL.replace(/\/$/, '').replace(/\/rest\/v1$/, '');

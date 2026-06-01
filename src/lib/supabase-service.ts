@@ -59,8 +59,9 @@ function parseDBRoom(data: any): GameRoom {
 export async function subscribeToRoom(roomId: string, callback: (room: GameRoom) => void): Promise<() => void> {
   const isDBActive = await checkTableExistence();
   
-  // Secondary speed channel for instant updates and Presence
-  const speedChannel = supabase.channel(`speed-room-${roomId}`)
+  // Use a unique sub-header to avoid "already subscribed" errors if reused
+  const speedChannelId = `speed-room-${roomId}-${Math.random().toString(36).substring(7)}`;
+  const speedChannel = supabase.channel(speedChannelId)
     .on('presence', { event: 'sync' }, () => {
       const state = speedChannel.presenceState();
       // Map presence to UIDs
@@ -99,7 +100,7 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
       // Room was deleted, trigger exit
       callback({ id: roomId, ownerId: '', status: 'finished', difficulty: 'Fácil', players: [], cards: [], currentPlayerIndex: 0, createdAt: '', updatedAt: '' });
     })
-    .subscribe(async (status) => {
+    .subscribe(async (status: string) => {
       if (status === 'SUBSCRIBED') {
         const uid = getOrCreateUserId();
         await speedChannel.track({
@@ -111,8 +112,9 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
 
   if (isDBActive) {
     // Standard Supabase DB Change Listener
+    const dbChannelId = `db-rooms-${roomId}-${Math.random().toString(36).substring(7)}`;
     const channel = supabase
-      .channel(`db-rooms-${roomId}`)
+      .channel(dbChannelId)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
@@ -255,14 +257,17 @@ export async function createRoom(roomId: string, room: GameRoom): Promise<void> 
   }
   
   // Always join a broadcast channel even in DB mode for fast signaling
-  const channel = supabase.channel(`speed-room-${roomId}`);
-  channel.subscribe((status) => {
+  const channelId = `signal-trigger-${roomId}-${Math.random().toString(36).substring(7)}`;
+  const channel = supabase.channel(channelId);
+  channel.subscribe((status: string) => {
     if (status === 'SUBSCRIBED') {
       channel.send({
         type: 'broadcast',
         event: 'room_ready',
         payload: { roomId }
       });
+      // Cleanup signaling channel after send
+      setTimeout(() => supabase.removeChannel(channel), 2000);
     }
   });
 }
@@ -310,11 +315,17 @@ export async function updateRoom(roomId: string, updates: Partial<GameRoom>): Pr
     await supabase.from('rooms').update(dbUpdates).eq('id', roomId);
     
     // Notify via broadcast too for speed
-    const channel = supabase.channel(`speed-room-${roomId}`);
-    channel.send({
-      type: 'broadcast',
-      event: 'state_pushed',
-      payload: updates
+    const msgChannelId = `state-msg-${roomId}-${Math.random().toString(36).substring(7)}`;
+    const channel = supabase.channel(msgChannelId);
+    channel.subscribe((status: string) => {
+      if (status === 'SUBSCRIBED') {
+        channel.send({
+          type: 'broadcast',
+          event: 'state_pushed',
+          payload: updates
+        });
+        setTimeout(() => supabase.removeChannel(channel), 1000);
+      }
     });
   } else {
     if (currentLocalRoomState) {
@@ -345,21 +356,24 @@ export async function joinRoom(roomId: string, player: Player): Promise<void> {
         .eq('id', roomId);
         
       // Crucial: Send broadcast to wake up host
-      const channel = supabase.channel(`speed-room-${roomId}`);
-      channel.subscribe((status) => {
+      const joinChannelId = `join-msg-${roomId}-${Math.random().toString(36).substring(7)}`;
+      const channel = supabase.channel(joinChannelId);
+      channel.subscribe((status: string) => {
         if (status === 'SUBSCRIBED') {
           channel.send({
             type: 'broadcast',
             event: 'player_joined',
             payload: player
           });
+          setTimeout(() => supabase.removeChannel(channel), 1000);
         }
       });
     }
   } else {
     // Broadcast fallback
-    const channel = supabase.channel(`room_broadcast_${roomId}`);
-    channel.subscribe((status) => {
+    const fallbackChannelId = `room_broadcast_${roomId}`;
+    const channel = supabase.channel(fallbackChannelId);
+    channel.subscribe((status: string) => {
       if (status === 'SUBSCRIBED') {
         channel.send({
           type: 'broadcast',
@@ -374,11 +388,17 @@ export async function joinRoom(roomId: string, player: Player): Promise<void> {
 // Delete room permanently
 export async function deleteRoom(roomId: string): Promise<void> {
   await supabase.from('rooms').delete().eq('id', roomId);
-  const channel = supabase.channel(`speed-room-${roomId}`);
-  channel.send({
-    type: 'broadcast',
-    event: 'room_deleted',
-    payload: { roomId }
+  const delChannelId = `del-msg-${roomId}-${Math.random().toString(36).substring(7)}`;
+  const channel = supabase.channel(delChannelId);
+  channel.subscribe((status: string) => {
+    if (status === 'SUBSCRIBED') {
+      channel.send({
+        type: 'broadcast',
+        event: 'room_deleted',
+        payload: { roomId }
+      });
+      setTimeout(() => supabase.removeChannel(channel), 1000);
+    }
   });
 }
 
@@ -401,11 +421,17 @@ export async function leaveRoom(roomId: string, userId: string): Promise<void> {
     }
     
     // Notify via broadcast
-    const channel = supabase.channel(`speed-room-${roomId}`);
-    channel.send({
-      type: 'broadcast',
-      event: 'player_left',
-      payload: { uid: userId }
+    const leaveChannelId = `leave-msg-${roomId}-${Math.random().toString(36).substring(7)}`;
+    const channel = supabase.channel(leaveChannelId);
+    channel.subscribe((status: string) => {
+      if (status === 'SUBSCRIBED') {
+        channel.send({
+          type: 'broadcast',
+          event: 'player_left',
+          payload: { uid: userId }
+        });
+        setTimeout(() => supabase.removeChannel(channel), 1000);
+      }
     });
   }
 }
