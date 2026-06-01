@@ -269,6 +269,16 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
     .on('broadcast', { event: 'force_refresh' }, () => {
       refreshRoom();
     })
+    .on('broadcast', { event: 'card_flip' }, (payload: any) => {
+      if (currentLocalRoomState && payload.payload?.index !== undefined) {
+        const index = payload.payload.index;
+        if (currentLocalRoomState.cards[index] && !currentLocalRoomState.cards[index].isFlipped) {
+          currentLocalRoomState.cards[index].isFlipped = true;
+          // Trigger instant callback with partial visual update
+          callback({ ...currentLocalRoomState });
+        }
+      }
+    })
     .on('broadcast', { event: 'room_deleted' }, () => {
       callback(null as any);
     })
@@ -383,6 +393,37 @@ export async function getRoom(roomId: string): Promise<GameRoom | null> {
     console.error('getRoom Catch Error:', err);
     return null;
   }
+}
+
+// Send a fast signal for a card flip to bypass DB delay
+export async function sendCardFlip(roomId: string, index: number): Promise<void> {
+  const sigId = `fast-flip-${roomId}-${Math.random().toString(36).substring(7)}`;
+  const channel = supabase.channel(sigId);
+  channel.subscribe((status: string) => {
+    if (status === 'SUBSCRIBED') {
+      channel.send({
+        type: 'broadcast',
+        event: 'card_flip',
+        payload: { roomId, index }
+      });
+      // Use shorter timeout for fast signals
+      setTimeout(() => supabase.removeChannel(channel), 500);
+    }
+  });
+
+  // Also notify via the main signal channel for the room
+  const mainSigId = `room-signal:${roomId}`;
+  const mainChannel = supabase.channel(mainSigId);
+  mainChannel.subscribe((status: string) => {
+    if (status === 'SUBSCRIBED') {
+      mainChannel.send({
+        type: 'broadcast',
+        event: 'card_flip',
+        payload: { index }
+      });
+      setTimeout(() => supabase.removeChannel(mainChannel), 500);
+    }
+  });
 }
 
 // Update room fields

@@ -13,6 +13,7 @@ import {
   joinRoom, 
   leaveRoom, 
   subscribeToRoom,
+  sendCardFlip,
   submitSoloTime,
   getGlobalRanking
 } from './lib/supabase-service.ts';
@@ -450,6 +451,11 @@ export default function App() {
     newCards[index].isFlipped = true;
     setCards(newCards);
     
+    // Fast signal for visual feedback to other online players
+    if (mode === 'online' && onlineRoom?.id) {
+      sendCardFlip(onlineRoom.id, index);
+    }
+    
     const newFlipped = [...flippedIndices, index];
     setFlippedIndices(newFlipped);
 
@@ -644,7 +650,7 @@ export default function App() {
 
   return (
     <div className={`min-h-screen ${settings.theme === 'dark' ? 'bg-[#0a0f1e]' : 'bg-gray-100'} transition-colors font-sans selection:bg-green-500 selection:text-white pb-10 overflow-x-hidden relative`}>
-      <BackgroundAnimation />
+      {screen === 'home' && <BackgroundAnimation />}
       <header className="py-6 px-4">
         {/* Placeholder for header if needed */}
       </header>
