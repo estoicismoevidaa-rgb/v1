@@ -232,6 +232,23 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
 
   const channel = supabase.channel(channelId);
 
+  const refreshRoom = async () => {
+    const room = await getRoom(roomId);
+    if (room) {
+      // Preserve online status from current local state when merging DB update
+      const state = channel.presenceState();
+      const onlineUids = Object.values(state).flat().map((p: any) => p.uid);
+      room.players = room.players.map(p => ({
+        ...p,
+        isOnline: onlineUids.includes(p.uid)
+      }));
+      currentLocalRoomState = room;
+      callback(room);
+    } else {
+      callback(null as any);
+    }
+  };
+
   channel
     .on('presence', { event: 'sync' }, () => {
       const state = channel.presenceState();
@@ -246,37 +263,11 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
         callback(currentLocalRoomState);
       }
     })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` }, async (payload) => {
-      // Always refetch full data to avoid partial update issues with Postgres Replicas
-      const room = await getRoom(roomId);
-      if (room) {
-        // Preserve online status from current local state when merging DB update
-        const onlineUids = Object.values(channel.presenceState()).flat().map((p: any) => p.uid);
-        room.players = room.players.map(p => ({
-          ...p,
-          isOnline: onlineUids.includes(p.uid)
-        }));
-        currentLocalRoomState = room;
-        callback(room);
-      } else if (payload.eventType === 'DELETE') {
-        callback({ id: roomId, ownerId: '', status: 'finished', difficulty: 'Fácil', players: [], cards: [], currentPlayerIndex: 0, createdAt: '', updatedAt: '', maxPlayers: 2, isPublic: false });
-      }
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` }, () => {
+      refreshRoom();
     })
-    .on('broadcast', { event: 'force_refresh' }, async () => {
-      const room = await getRoom(roomId);
-      if (room) {
-        // Preserve online status from current local state when merging DB update
-        const onlineUids = Object.values(channel.presenceState()).flat().map((p: any) => p.uid);
-        room.players = room.players.map(p => ({
-          ...p,
-          isOnline: onlineUids.includes(p.uid)
-        }));
-        currentLocalRoomState = room;
-        callback(room);
-      } else {
-        // Not found, maybe deleted
-        callback(null as any);
-      }
+    .on('broadcast', { event: 'force_refresh' }, () => {
+      refreshRoom();
     })
     .on('broadcast', { event: 'room_deleted' }, () => {
       callback(null as any);
@@ -287,6 +278,8 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
           uid: userId,
           online_at: new Date().toISOString(),
         });
+        // One safety refresh right after subscription
+        setTimeout(refreshRoom, 1000);
       }
     });
 

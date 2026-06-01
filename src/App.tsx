@@ -205,6 +205,28 @@ export default function App() {
     }
   }, [mode, onlineRoom?.status, screen]);
 
+  // Online safety poller for waiting rooms
+  useEffect(() => {
+    if (mode === 'online' && onlineRoom?.id && (screen === 'waiting-room' || screen === 'game')) {
+      const poller = setInterval(async () => {
+        try {
+          const freshRoom = await getRoom(onlineRoom.id!);
+          if (freshRoom) {
+            // Only update if something changed to avoid unnecessary re-renders
+            if (freshRoom.status !== onlineRoom.status || 
+                freshRoom.players.length !== onlineRoom.players.length ||
+                freshRoom.currentPlayerIndex !== onlineRoom.currentPlayerIndex) {
+              setOnlineRoom(prev => ({ ...prev, ...freshRoom }));
+            }
+          }
+        } catch (e) {
+          console.error("Polling error:", e);
+        }
+      }, 5000); // 5s fallback
+      return () => clearInterval(poller);
+    }
+  }, [mode, onlineRoom?.id, onlineRoom?.status, onlineRoom?.players.length, onlineRoom?.currentPlayerIndex, screen]);
+
   // Online listener for room updates
   useEffect(() => {
     if (mode === 'online' && onlineRoom?.id) {
@@ -212,29 +234,37 @@ export default function App() {
       let unsubscribeFn: (() => void) | null = null;
 
       const setupSubscription = async () => {
-        const unsub = await subscribeToRoom(onlineRoom.id!, (data) => {
-          if (isUnsubscribed) return;
-          if (data) {
-            setOnlineRoom(data);
-            setCards(data.cards || []);
-            setPlayers(data.players || []);
-            setCurrentPlayerIndex(data.currentPlayerIndex ?? 0);
-            setGameStatus(data.status || 'waiting');
-            setDifficulty(data.difficulty || 'Fácil');
-          } else {
-            // Room deleted or host ended it
-            if (screen === 'game' || screen === 'waiting-room') {
-              setScreen('home');
-              setOnlineRoom(null);
-              alert('A sala foi fechada pelo host.');
+        try {
+          const unsub = await subscribeToRoom(onlineRoom.id!, (data) => {
+            if (isUnsubscribed) return;
+            if (data) {
+              // Ensure we merge states carefully
+              setOnlineRoom(prev => {
+                if (!prev) return data;
+                return { ...prev, ...data };
+              });
+              setCards(data.cards || []);
+              setPlayers(data.players || []);
+              setCurrentPlayerIndex(data.currentPlayerIndex ?? 0);
+              setGameStatus(data.status || 'waiting');
+              setDifficulty(data.difficulty || 'Fácil');
+            } else {
+              // Room deleted or host ended it
+              if (screen === 'game' || screen === 'waiting-room') {
+                setScreen('home');
+                setOnlineRoom(null);
+                alert('A sala foi fechada pelo host.');
+              }
             }
+          });
+          
+          if (isUnsubscribed) {
+            unsub();
+          } else {
+            unsubscribeFn = unsub;
           }
-        });
-        
-        if (isUnsubscribed) {
-          unsub();
-        } else {
-          unsubscribeFn = unsub;
+        } catch (err) {
+          console.error('Subscription setup failed:', err);
         }
       };
 
