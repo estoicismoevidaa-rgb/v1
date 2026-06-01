@@ -57,6 +57,95 @@ function parseDBRoom(data: any): GameRoom {
   };
 }
 
+// Global Lobby State
+let lobbyChannel: any = null;
+let lobbyUsers: any[] = [];
+let lobbyMessages: any[] = [];
+let lobbyCallback: ((users: any[], messages: any[]) => void) | null = null;
+
+export async function subscribeToLobby(callback: (users: any[], messages: any[]) => void): Promise<() => void> {
+  const userId = getOrCreateUserId();
+  const { data: profile } = await supabase.from('profiles').select('username').eq('uid', userId).maybeSingle();
+  const username = profile?.username || 'Jogador';
+
+  const channelId = 'global-lobby';
+  
+  // Cleanup
+  const existing = (supabase as any).getChannels?.().find((c: any) => c.name === channelId);
+  if (existing) supabase.removeChannel(existing);
+
+  lobbyCallback = callback;
+  lobbyChannel = supabase.channel(channelId);
+
+  lobbyChannel
+    .on('presence', { event: 'sync' }, () => {
+      const state = lobbyChannel.presenceState();
+      const users = Object.values(state).flat().map((p: any) => ({
+        uid: p.uid,
+        name: p.name,
+        online_at: p.online_at
+      }));
+      // Remove duplicates by UID
+      const uniqueUsers = Array.from(new Map(users.map((u: any) => [u.uid, u])).values());
+      lobbyUsers = uniqueUsers;
+      if (lobbyCallback) lobbyCallback(lobbyUsers, lobbyMessages);
+    })
+    .on('broadcast', { event: 'chat' }, (payload: any) => {
+      const newMessage = {
+        id: Math.random().toString(36).substring(7),
+        sender: payload.payload.name,
+        senderId: payload.payload.uid,
+        text: payload.payload.text,
+        timestamp: new Date().toISOString()
+      };
+      lobbyMessages = [...lobbyMessages.slice(-49), newMessage];
+      if (lobbyCallback) lobbyCallback(lobbyUsers, lobbyMessages);
+    })
+    .subscribe(async (status: string) => {
+      if (status === 'SUBSCRIBED') {
+        await lobbyChannel.track({
+          uid: userId,
+          name: username,
+          online_at: new Date().toISOString()
+        });
+      }
+    });
+
+  return () => {
+    supabase.removeChannel(lobbyChannel);
+    lobbyChannel = null;
+    lobbyCallback = null;
+  };
+}
+
+export async function sendLobbyMessage(text: string): Promise<void> {
+  if (!lobbyChannel) return;
+  const userId = getOrCreateUserId();
+  const { data: profile } = await supabase.from('profiles').select('username').eq('uid', userId).maybeSingle();
+  const username = profile?.username || 'Jogador';
+
+  await lobbyChannel.send({
+    type: 'broadcast',
+    event: 'chat',
+    payload: {
+      uid: userId,
+      name: username,
+      text: text
+    }
+  });
+
+  // Also add locally for the sender
+  const newMessage = {
+    id: Math.random().toString(36).substring(7),
+    sender: username,
+    senderId: userId,
+    text: text,
+    timestamp: new Date().toISOString()
+  };
+  lobbyMessages = [...lobbyMessages.slice(-49), newMessage];
+  if (lobbyCallback) lobbyCallback(lobbyUsers, lobbyMessages);
+}
+
 // Subscribe to room changes: Either via Postgres changes or Broadcast channel
 export async function subscribeToRoom(roomId: string, callback: (room: GameRoom) => void): Promise<() => void> {
   const isDBActive = await checkTableExistence();
@@ -71,6 +160,13 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
 
   // 2. Setup Realtime Channel for Presence and Fast Signaling
   const channelId = `room:${roomId}`;
+  
+  // Cleanup any existing channel with this ID in this client to avoid "already subscribed" errors
+  const existingChannel = (supabase as any).getChannels?.().find((c: any) => c.name === channelId);
+  if (existingChannel) {
+    supabase.removeChannel(existingChannel);
+  }
+
   const channel = supabase.channel(channelId);
 
   channel
@@ -236,7 +332,11 @@ export async function updateRoom(roomId: string, updates: Partial<GameRoom>): Pr
     await supabase.from('rooms').update(dbUpdates).eq('id', roomId);
     
     // Notify via broadcast for immediate refresh on all clients
-    const channel = supabase.channel(`room:${roomId}`);
+    const sigId = `room:${roomId}`;
+    const existing = (supabase as any).getChannels?.().find((c: any) => c.name === sigId);
+    if (existing) supabase.removeChannel(existing);
+    
+    const channel = supabase.channel(sigId);
     channel.subscribe((status: string) => {
       if (status === 'SUBSCRIBED') {
         channel.send({
@@ -279,7 +379,11 @@ export async function joinRoom(roomId: string, player: Player): Promise<void> {
         .eq('id', roomId);
         
       // Broadcast force refresh
-      const channel = supabase.channel(`room:${roomId}`);
+      const sigId = `room:${roomId}`;
+      const existing = (supabase as any).getChannels?.().find((c: any) => c.name === sigId);
+      if (existing) supabase.removeChannel(existing);
+      
+      const channel = supabase.channel(sigId);
       channel.subscribe((status: string) => {
         if (status === 'SUBSCRIBED') {
           channel.send({
@@ -339,7 +443,11 @@ export async function leaveRoom(roomId: string, userId: string): Promise<void> {
     }
     
     // Broadcast force refresh
-    const channel = supabase.channel(`room:${roomId}`);
+    const sigId = `room:${roomId}`;
+    const existing = (supabase as any).getChannels?.().find((c: any) => c.name === sigId);
+    if (existing) supabase.removeChannel(existing);
+    
+    const channel = supabase.channel(sigId);
     channel.subscribe((status: string) => {
       if (status === 'SUBSCRIBED') {
         channel.send({
@@ -375,12 +483,20 @@ export async function getPublicRooms(): Promise<GameRoom[]> {
 
 // Find or Create a public room for a specific player count
 export async function findOrCreatePublicRoom(maxPlayers: number, difficulty: string, cards: any[]): Promise<string> {
-  const rooms = await getPublicRooms();
-  const availableRoom = rooms.find(r => r.maxPlayers === maxPlayers && r.players.length < maxPlayers && r.difficulty === difficulty);
-  
-  if (availableRoom) {
-    return availableRoom.id!;
-  }
+  // Try twice with a small delay to avoid simultaneous creation race conditions
+  const findRoom = async () => {
+    const rooms = await getPublicRooms();
+    return rooms.find(r => r.maxPlayers === maxPlayers && r.players.length < maxPlayers && r.difficulty === difficulty);
+  };
+
+  let availableRoom = await findRoom();
+  if (availableRoom) return availableRoom.id!;
+
+  // Random delay 500-1500ms
+  await new Promise(res => setTimeout(res, 500 + Math.random() * 1000));
+
+  availableRoom = await findRoom();
+  if (availableRoom) return availableRoom.id!;
   
   // Create a new one
   const roomId = `PUB-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;

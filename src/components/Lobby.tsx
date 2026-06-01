@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Globe, User, Users, ChevronLeft, Lock, Loader2, Trophy } from 'lucide-react';
+import { Globe, User, Users, ChevronLeft, Lock, Loader2, Trophy, MessageSquare, Send, Circle } from 'lucide-react';
 import { GameRoom } from '../types.ts';
-import { getPublicRooms, findOrCreatePublicRoom } from '../lib/supabase-service.ts';
+import { getPublicRooms, findOrCreatePublicRoom, subscribeToLobby, sendLobbyMessage } from '../lib/supabase-service.ts';
 import { generateCards } from '../lib/game-logic.ts';
+import { getOrCreateUserId } from '../lib/supabase.ts';
 
 interface LobbyProps {
   onBack: () => void;
@@ -22,6 +23,11 @@ export function Lobby({ onBack, onJoinRoom, onStartSolo, isLoggedIn, onAuth }: L
   const [rooms, setRooms] = useState<GameRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState<number | null>(null);
+  const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const currentUserId = getOrCreateUserId();
 
   const fetchRooms = async () => {
     try {
@@ -36,9 +42,31 @@ export function Lobby({ onBack, onJoinRoom, onStartSolo, isLoggedIn, onAuth }: L
 
   useEffect(() => {
     fetchRooms();
-    const interval = setInterval(fetchRooms, 10000); // Poll every 10s
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchRooms, 5000); // Poll every 5s for more reactive lobby
+    
+    // Subscribe to global lobby for users and chat
+    let unsubscribe: (() => void) | null = null;
+    subscribeToLobby((users, msgs) => {
+      setOnlineUsers(users);
+      setMessages(msgs);
+    }).then(unsub => unsubscribe = unsub);
+
+    return () => {
+      clearInterval(interval);
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+    sendLobbyMessage(newMessage.trim());
+    setNewMessage('');
+  };
 
   const handleJoinPublic = async (maxPlayers: number) => {
     if (!isLoggedIn) {
@@ -113,7 +141,7 @@ export function Lobby({ onBack, onJoinRoom, onStartSolo, isLoggedIn, onAuth }: L
           </motion.div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
           {/* Solo Online Section */}
           <div className="lg:col-span-1">
             <motion.div
@@ -146,7 +174,7 @@ export function Lobby({ onBack, onJoinRoom, onStartSolo, isLoggedIn, onAuth }: L
             <div className="bg-blue-900/40 p-8 rounded-[2.5rem] border border-blue-700 h-full">
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-2xl font-black flex items-center gap-3">
-                  <Users className="w-6 h-6 text-blue-400" /> Salas Públicas
+                  <Globe className="w-6 h-6 text-blue-400" /> Partida Rápida
                 </h2>
                 {loading && <Loader2 className="w-5 h-5 animate-spin text-blue-400" />}
               </div>
@@ -172,7 +200,7 @@ export function Lobby({ onBack, onJoinRoom, onStartSolo, isLoggedIn, onAuth }: L
                         <div>
                           <span className="block font-black text-lg">{opt.label}</span>
                           <span className="text-[10px] text-blue-400/60 uppercase font-bold tracking-widest">
-                            Limite: {opt.players} Jogadores
+                            {opt.players} Jogadores
                           </span>
                         </div>
                       </div>
@@ -193,8 +221,93 @@ export function Lobby({ onBack, onJoinRoom, onStartSolo, isLoggedIn, onAuth }: L
               </div>
               
               <p className="mt-8 text-center text-blue-400/40 text-[10px] font-bold uppercase tracking-widest">
-                Novas salas são criadas automaticamente se necessário
+                Você será pareado automaticamente com outros jogadores
               </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Community & Chat Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1">
+            <div className="bg-blue-900/40 p-8 rounded-[2.5rem] border border-blue-700 h-full min-h-[400px]">
+              <h2 className="text-xl font-black mb-6 flex items-center gap-3">
+                <Users className="w-5 h-5 text-green-400" /> Online ({onlineUsers.length})
+              </h2>
+              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                {onlineUsers.map((user) => (
+                  <div key={user.uid} className="flex items-center justify-between p-3 bg-blue-950/30 rounded-2xl border border-white/5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-800 rounded-xl flex items-center justify-center font-bold text-blue-300">
+                        {user.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm">{user.name}</p>
+                        <p className="text-[10px] text-green-400 flex items-center gap-1">
+                          <Circle className="w-2 h-2 fill-current" /> Ativo agora
+                        </p>
+                      </div>
+                    </div>
+                    {user.uid === currentUserId && (
+                      <span className="text-[9px] bg-blue-600 px-2 py-1 rounded-full font-bold uppercase tracking-tighter">Você</span>
+                    )}
+                  </div>
+                ))}
+                {onlineUsers.length === 0 && (
+                  <p className="text-center text-blue-400/50 py-10 italic">Nenhum jogador online</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-2">
+            <div className="bg-blue-900/40 p-8 rounded-[2.5rem] border border-blue-700 h-full flex flex-col min-h-[450px]">
+              <h2 className="text-xl font-black mb-6 flex items-center gap-3">
+                <MessageSquare className="w-5 h-5 text-blue-400" /> Chat da Comunidade
+              </h2>
+              
+              <div className="flex-grow mb-6 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar flex flex-col gap-4">
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`flex flex-col ${msg.senderId === currentUserId ? 'items-end' : 'items-start'}`}>
+                    <div className={`p-4 rounded-2xl max-w-[85%] ${
+                      msg.senderId === currentUserId 
+                      ? 'bg-blue-600 text-white rounded-tr-none' 
+                      : 'bg-blue-950/80 text-blue-100 rounded-tl-none border border-white/5'
+                    }`}>
+                      {msg.senderId !== currentUserId && (
+                        <p className="text-[10px] font-black text-blue-400 mb-1 uppercase tracking-wider">{msg.sender}</p>
+                      )}
+                      <p className="text-sm">{msg.text}</p>
+                    </div>
+                    <span className="text-[9px] text-white/30 mt-1 px-1">
+                      {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                ))}
+                {messages.length === 0 && (
+                  <div className="flex-grow flex flex-col items-center justify-center opacity-30 text-center">
+                    <MessageSquare className="w-12 h-12 mb-4" />
+                    <p>Seja o primeiro a dizer olá!</p>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              <form onSubmit={handleSendMessage} className="relative">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Digite sua mensagem..."
+                  className="w-full bg-blue-950/50 border border-blue-700/50 rounded-2xl py-4 pl-6 pr-14 focus:outline-none focus:border-blue-500 transition-all text-sm"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-2 top-2 p-3 bg-blue-600 hover:bg-blue-500 rounded-xl transition-all active:scale-95"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
+              </form>
             </div>
           </div>
         </div>
