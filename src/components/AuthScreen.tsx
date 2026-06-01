@@ -57,13 +57,23 @@ export function AuthScreen({ onAuthenticated, currentUid }: AuthScreenProps) {
     } catch (err: any) {
       console.error('Auth flow error:', err);
       let msg = err.message || 'Ocorreu um erro ao processar seu pedido. Tente novamente.';
-      if (msg.toLowerCase().includes('api key') || msg.toLowerCase().includes('chave de api')) {
-        msg = 'Erro: Chave de API inválida ou o projeto Supabase está pausado. Verifique as configurações VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.';
+      if (msg.toLowerCase().includes('api key') || msg.toLowerCase().includes('chave de api') || msg.toLowerCase().includes('invalid')) {
+        msg = 'Erro de Conexão: A Chave de API está inválida ou o projeto Supabase foi pausado. Por favor, verifique as chaves VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY nas configurações ou jogue como convidado.';
       }
       setError(msg);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleGuestMode = () => {
+    const guestProfile: UserProfile = {
+      uid: currentUid,
+      username: 'Convidado',
+      email: 'guest@local',
+      createdAt: new Date().toISOString()
+    };
+    onAuthenticated(guestProfile);
   };
 
   if (needsConfirmation) {
@@ -213,10 +223,21 @@ export function AuthScreen({ onAuthenticated, currentUid }: AuthScreenProps) {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm"
+                className="space-y-3"
               >
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                <p>{error}</p>
+                <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <p>{error}</p>
+                </div>
+                {error.includes('Erro de Conexão') && (
+                  <button
+                    type="button"
+                    onClick={handleGuestMode}
+                    className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-blue-400 rounded-xl text-xs font-bold transition-all border border-blue-500/20"
+                  >
+                    Continuar como Convidado (Modo Offline)
+                  </button>
+                )}
               </motion.div>
             )}
 
