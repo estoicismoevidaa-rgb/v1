@@ -56,7 +56,11 @@ export function AuthScreen({ onAuthenticated, currentUid }: AuthScreenProps) {
       }
     } catch (err: any) {
       console.error('Auth flow error:', err);
-      setError(err.message || 'Ocorreu um erro ao processar seu pedido. Tente novamente.');
+      let msg = err.message || 'Ocorreu um erro ao processar seu pedido. Tente novamente.';
+      if (msg.toLowerCase().includes('api key') || msg.toLowerCase().includes('chave de api')) {
+        msg = 'Erro: Chave de API inválida ou o projeto Supabase está pausado. Verifique as configurações VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.';
+      }
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -115,7 +119,7 @@ export function AuthScreen({ onAuthenticated, currentUid }: AuthScreenProps) {
               onClick={() => { setMode('register'); setError(null); }}
               className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${mode === 'register' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-slate-400 hover:text-white'}`}
             >
-              <UserPlus className="w-4 h-4" /> Registrar
+              <UserPlus className="w-4 h-4" /> Criar Conta
             </button>
           </div>
         </div>
