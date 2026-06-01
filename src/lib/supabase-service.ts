@@ -48,6 +48,7 @@ function parseDBRoom(data: any): GameRoom {
     players: typeof data.players === 'string' ? JSON.parse(data.players) : data.players,
     cards: typeof data.cards === 'string' ? JSON.parse(data.cards) : data.cards,
     currentPlayerIndex: data.current_player_index,
+    password: data.password,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     gameStartedAt: data.game_started_at
@@ -169,10 +170,28 @@ export async function createRoom(roomId: string, room: GameRoom): Promise<void> 
       players: room.players,
       cards: room.cards,
       current_player_index: room.currentPlayerIndex,
+      password: room.password,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }]);
-    if (error) throw error;
+    if (error) {
+      // If password column missing, ignore it for now but try to insert without it
+      if (error.message.includes('column "password"')) {
+        await supabase.from('rooms').insert([{
+          id: roomId,
+          owner_id: room.ownerId,
+          status: room.status,
+          difficulty: room.difficulty,
+          players: room.players,
+          cards: room.cards,
+          current_player_index: room.currentPlayerIndex,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }]);
+      } else {
+        throw error;
+      }
+    }
   } else {
     // Store locally on this host, broadcast to players
     currentLocalRoomState = { ...room, id: roomId };

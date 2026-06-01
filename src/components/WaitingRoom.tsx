@@ -4,7 +4,7 @@
  */
 
 import { motion } from 'motion/react';
-import { User, Copy, Check, Play, LogOut } from 'lucide-react';
+import { User, Copy, Check, Play, LogOut, Key } from 'lucide-react';
 import { useState } from 'react';
 import { GameRoom } from '../types.ts';
 
@@ -20,7 +20,10 @@ export function WaitingRoom({ room, userId, onStart, onLeave }: WaitingRoomProps
   const isHost = room.ownerId === userId;
 
   const copyLink = () => {
-    navigator.clipboard.writeText(window.location.origin + '?room=' + room.id);
+    const baseUrl = window.location.origin + window.location.pathname;
+    const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+    const roomUrl = `${cleanBaseUrl}?room=${room.id}`;
+    navigator.clipboard.writeText(roomUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -35,14 +38,28 @@ export function WaitingRoom({ room, userId, onStart, onLeave }: WaitingRoomProps
           </span>
         </div>
 
-        <div className="mb-6">
+        <div className="mb-6 space-y-3">
           <div className="flex items-center justify-between p-4 bg-blue-950 border border-blue-700 rounded-xl">
-            <span className="text-blue-300 font-mono">{room.id}</span>
-            <button onClick={copyLink} className="p-2 hover:bg-blue-800 rounded-lg text-blue-200 transition-all">
+            <div>
+              <p className="text-[10px] text-blue-400 uppercase font-bold mb-1">Código da Sala</p>
+              <span className="text-2xl font-black text-white tracking-widest font-mono">{room.id}</span>
+            </div>
+            <button onClick={copyLink} className="p-3 hover:bg-blue-800 rounded-xl text-blue-200 transition-all bg-blue-900/50">
               {copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
             </button>
           </div>
-          <p className="text-xs text-blue-400 mt-2 text-center">Compartilhe o código ou o link com seus amigos</p>
+          
+          {room.password && (
+            <div className="p-4 bg-blue-950/50 border border-blue-800/50 rounded-xl flex justify-between items-center">
+              <div>
+                <p className="text-[10px] text-blue-400 uppercase font-bold">Senha</p>
+                <p className="text-lg font-bold text-blue-100">{room.password}</p>
+              </div>
+              <Key className="w-5 h-5 text-blue-500 opacity-50" />
+            </div>
+          )}
+          
+          <p className="text-xs text-blue-400 text-center">Informe o código e a senha para seus amigos entrarem</p>
         </div>
 
         <div className="mb-8">

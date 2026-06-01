@@ -56,78 +56,95 @@ export async function checkUsernameExists(username: string): Promise<boolean> {
 }
 
 /**
- * Verifies credentials and retrieves a profile.
+ * Verifies credentials and retrieves a profile using Supabase Auth.
  */
-export async function loginProfile(username: string, email: string): Promise<UserProfile | null> {
+export async function loginProfile(email: string, password: string): Promise<UserProfile | null> {
   try {
-    const { data, error } = await supabase
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (authError) {
+      if (authError.message.includes('Email not confirmed')) {
+        throw new Error('Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada.');
+      }
+      throw authError;
+    }
+    
+    if (!authData.user) return null;
+
+    // Get the associated profile
+    const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('*')
-      .eq('username', username)
-      .eq('email', email)
+      .eq('uid', authData.user.id)
       .maybeSingle();
 
-    if (error) throw error;
-    if (!data) return null;
+    if (profileError) throw profileError;
+    if (!profileData) return null;
 
     const profile: UserProfile = {
-      uid: data.uid,
-      username: data.username,
-      email: data.email,
-      createdAt: data.created_at,
-      avatarUrl: data.avatar_url
+      uid: profileData.uid,
+      username: profileData.username,
+      email: profileData.email,
+      createdAt: profileData.created_at,
+      avatarUrl: profileData.avatar_url
     };
 
     localStorage.setItem('fruit-memory-user-id', profile.uid);
     localStorage.setItem(`profile_${profile.uid}`, JSON.stringify(profile));
     
     return profile;
-  } catch (err) {
+  } catch (err: any) {
     console.error('Login error:', err);
     throw err;
   }
 }
 
 /**
- * Registers a new user profile and initializes empty stats.
+ * Registers a new user using Supabase Auth.
+ * Supabase will automatically send a confirmation email.
  */
-export async function registerProfile(uid: string, username: string, email: string): Promise<UserProfile> {
-  const profile: UserProfile = {
-    uid,
-    username: username.trim().toLowerCase(),
-    email: email.trim(),
-    createdAt: new Date().toISOString()
-  };
-
+export async function registerProfile(username: string, email: string, password: string): Promise<{ needsConfirmation: boolean }> {
   try {
-    // 1. Save Profile
-    const { error: profileError } = await supabase.from('profiles').upsert([
-      {
-        uid: profile.uid,
-        username: profile.username,
-        email: profile.email,
-        created_at: profile.createdAt
+    // 1. Sign up with Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username: username,
+        }
       }
-    ]);
+    });
 
-    if (profileError) {
-      console.warn('Supabase profile save failed:', profileError.message);
-    } else {
-      // 2. Initialize Stats if profile worked
+    if (authError) throw authError;
+
+    if (authData.user) {
+      // 2. Create the profile record 
+      await supabase.from('profiles').upsert([
+        {
+          uid: authData.user.id,
+          username: username.trim().toLowerCase(),
+          email: email.trim()
+        }
+      ]);
+
+      // 3. Initialize Stats
       await supabase.from('stats').upsert([{
-        uid: profile.uid,
+        uid: authData.user.id,
         games_played: 0,
         total_points: 0,
         last_played_at: new Date().toISOString()
-      }]).select().single();
+      }]);
     }
-  } catch (err: any) {
-    console.warn('Unexpected registration error:', err);
-  }
 
-  // Always save locally as primary persistence or cache
-  localStorage.setItem(`profile_${uid}`, JSON.stringify(profile));
-  return profile;
+    return { needsConfirmation: true };
+  } catch (err: any) {
+    console.error('Registration error:', err);
+    throw err;
+  }
 }
 
 /**

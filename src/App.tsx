@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getOrCreateUserId } from './lib/supabase.ts';
+import { getOrCreateUserId, supabase } from './lib/supabase.ts';
 import { getProfile, clearLocalProfile, updateUserStats, getRanking } from './lib/profile-service.ts';
 import { 
   createRoom, 
@@ -91,19 +91,64 @@ export default function App() {
   // Refs
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const navigateAfterAuth = useCallback(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('room')) {
+      console.log('Detected room in URL, navigating to online config');
+      setMode('online');
+      setScreen('online-config');
+    } else {
+      setScreen('home');
+    }
+  }, []);
+
   // Initialize
   useEffect(() => {
     const initAuth = async () => {
-      const uid = getOrCreateUserId();
-      setCurrentUserId(uid);
-      
       try {
-        const profile = await getProfile(uid);
-        if (profile) {
-          setUserProfile(profile);
-          setScreen('home');
+        // Check current Supabase session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          const uid = session.user.id;
+          setCurrentUserId(uid);
+          const profile = await getProfile(uid);
+          if (profile) {
+            setUserProfile(profile);
+            navigateAfterAuth();
+          } else {
+            // Profile entry missing but auth exists - try to create it from metadata
+            const username = session.user.user_metadata?.username || 'Jogador';
+            const { error: upsertError } = await supabase.from('profiles').upsert([{
+              uid,
+              username,
+              email: session.user.email
+            }]);
+            
+            if (!upsertError) {
+              const newProfile = await getProfile(uid);
+              setUserProfile(newProfile);
+              navigateAfterAuth();
+            } else {
+              setScreen('auth');
+            }
+          }
         } else {
-          setScreen('auth');
+          // No session, check if we have a locally cached user ID from previous flow 
+          // (Legacy support or just checking if they ever logged in)
+          const uid = localStorage.getItem('fruit-memory-user-id');
+          if (uid) {
+            const profile = await getProfile(uid);
+            if (profile) {
+              setUserProfile(profile);
+              setCurrentUserId(uid);
+              navigateAfterAuth();
+            } else {
+              setScreen('auth');
+            }
+          } else {
+            setScreen('auth');
+          }
         }
       } catch (err) {
         console.error('Auth check error:', err);
@@ -115,30 +160,24 @@ export default function App() {
 
     initAuth();
     localStorage.setItem('auth-failed', 'false');
+  }, [navigateAfterAuth]);
 
-    const params = new URLSearchParams(window.location.search);
-    const roomId = params.get('room');
-    if (params.get('room')) {
-      setMode('online');
-      setScreen('online-config');
-    }
-  }, []);
-
-  const handleLogout = () => {
+  const handleLogout = async () => {
     console.log('Starting logout process...');
     try {
+      await supabase.auth.signOut();
+      
       // Clear persistence completely for auth
       localStorage.removeItem('fruit-memory-user-id');
       
-      // Clear all profile caches
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('profile_')) {
-          localStorage.removeItem(key);
-        }
-      });
+      // Reset authentication and profile state
+      setCurrentUserId(null);
+      setUserProfile(null);
       
-      // Force hard reload to ensure all state is reset and a new UID is generated on boot
-      window.location.href = window.location.pathname;
+      // Redirect back to Auth Screen
+      setScreen('auth');
+      
+      console.log('Logout successful, redirected to AuthScreen');
     } catch (err) {
       console.error('Logout error:', err);
     }
@@ -242,7 +281,7 @@ export default function App() {
     // Online mode start is handled via WaitingRoom + Host action
   }, [currentUserId]);
 
-  const handleOnlineCreate = async (nickname: string, diff: Difficulty) => {
+  const handleOnlineCreate = async (nickname: string, diff: Difficulty, password?: string) => {
     if (!currentUserId) return;
     const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     const newRoom: GameRoom = {
@@ -252,6 +291,7 @@ export default function App() {
       players: [{ uid: currentUserId, name: nickname, score: 0, isHost: true }],
       cards: generateCards(diff),
       currentPlayerIndex: 0,
+      password: password || undefined,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -273,16 +313,23 @@ export default function App() {
     }
   };
 
-  const handleOnlineJoin = async (nickname: string, roomId: string) => {
+  const handleOnlineJoin = async (nickname: string, roomId: string, password?: string) => {
     if (!currentUserId) return;
     try {
       console.log('Attempting to join room:', roomId);
       const room = await getRoom(roomId);
       if (!room) {
-        alert('Sala não encontrada!');
+        alert('Sala não encontrada! Verifique o código.');
         return;
       }
-      console.log('Room found, joining...');
+
+      // Password check
+      if (room.password && room.password !== password) {
+        alert('Senha incorreta!');
+        return;
+      }
+
+      console.log('Room found and password verified, joining...');
       if (room.ownerId) {
         if (room.status !== 'waiting') {
           alert('A partida já começou ou terminou!');
@@ -563,7 +610,7 @@ export default function App() {
             onAuthenticated={(profile) => {
               setCurrentUserId(profile.uid);
               setUserProfile(profile);
-              setScreen('home');
+              navigateAfterAuth();
             }} 
           />
         )}

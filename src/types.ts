@@ -57,6 +57,7 @@ export interface GameRoom {
   players: Player[];
   cards: Card[];
   currentPlayerIndex: number;
+  password?: string;
   createdAt: any;
   updatedAt: any;
   gameStartedAt?: any;

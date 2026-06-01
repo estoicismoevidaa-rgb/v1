@@ -4,13 +4,14 @@
  */
 
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, Globe, Key, User } from 'lucide-react';
 import { Difficulty } from '../types.ts';
 
 interface OnlineMPConfigProps {
   onBack: () => void;
-  onCreate: (nickname: string, difficulty: Difficulty) => void;
-  onJoin: (nickname: string, roomId: string) => void;
+  onCreate: (nickname: string, difficulty: Difficulty, password?: string) => void;
+  onJoin: (nickname: string, roomId: string, password?: string) => void;
   initialNickname?: string;
 }
 
@@ -22,27 +23,47 @@ export function OnlineMPConfig({ onBack, onCreate, onJoin, initialNickname = '' 
   const [nickname, setNickname] = useState(initialNickname);
   const [difficulty, setDifficulty] = useState<Difficulty>('Fácil');
   const [roomId, setRoomId] = useState(initialRoomId);
+  const [password, setPassword] = useState('');
+  const [step, setStep] = useState<'search' | 'password'>(initialRoomId ? 'password' : 'search');
   const [showAuthWarning, setShowAuthWarning] = useState(false);
-
-  const checkAuth = (action: () => void) => {
-    // We check if the userId is a real firebase UID (usually starts with something specific or just check the flag in App)
-    // But since this component is nested, we can just check if we can actually reach Firestore or something.
-    // For now, I'll assume if it starts with 'local-user-', auth failed.
-    const isMockAuth = window.localStorage.getItem('auth-failed') === 'true'; // I'll set this in App
-    action(); 
-  };
-
   const [isCreating, setIsCreating] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
+  const [roomFound, setRoomFound] = useState<any>(null);
 
   const handleCreate = async () => {
     if (isCreating) return;
     setIsCreating(true);
     try {
       const finalNickname = nickname.trim() || `Player${Math.floor(Math.random() * 9000) + 1000}`;
-      await onCreate(finalNickname, difficulty);
+      await onCreate(finalNickname, difficulty, password);
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!roomId.trim() || isSearching) return;
+    setIsSearching(true);
+    try {
+      // We need a way to check if room exists without joining
+      // I'll use the onJoin with a specific flag or just let it handle the logic
+      // But for better UX, I'll add a check here
+      const { supabase } = await import('../lib/supabase.ts');
+      const { data, error } = await supabase.from('rooms').select('id, password').eq('id', roomId.toUpperCase()).single();
+      
+      if (error || !data) {
+        alert('Sala não encontrada! Verifique o código.');
+        return;
+      }
+      
+      setRoomFound(data);
+      setStep('password');
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao buscar sala.');
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -51,8 +72,7 @@ export function OnlineMPConfig({ onBack, onCreate, onJoin, initialNickname = '' 
     setIsJoining(true);
     try {
       const finalNickname = nickname.trim() || `Player${Math.floor(Math.random() * 9000) + 1000}`;
-      if (!roomId.trim()) return;
-      await onJoin(finalNickname, roomId.toUpperCase());
+      await onJoin(finalNickname, roomId.toUpperCase(), password);
     } finally {
       setIsJoining(false);
     }
@@ -129,6 +149,19 @@ export function OnlineMPConfig({ onBack, onCreate, onJoin, initialNickname = '' 
                   ))}
                 </div>
               </div>
+              <div className="mb-8">
+                <label className="block text-sm font-medium mb-2 text-blue-200">Senha da Sala (Opcional)</label>
+                <div className="relative">
+                  <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Deixe em branco para aberta"
+                    className="w-full pl-12 pr-4 py-3 bg-blue-950 border border-blue-700 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                  />
+                </div>
+              </div>
               <button
                 disabled={isCreating}
                 onClick={handleCreate}
@@ -138,28 +171,80 @@ export function OnlineMPConfig({ onBack, onCreate, onJoin, initialNickname = '' 
               </button>
             </>
           ) : (
-            <>
-              <div className="mb-8">
-                <label className="block text-sm font-medium mb-2 text-blue-200">Código da Sala</label>
-                <div className="relative">
-                  <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
-                  <input
-                    type="text"
-                    value={roomId}
-                    onChange={(e) => setRoomId(e.target.value.toUpperCase())}
-                    placeholder="CÓDIGO"
-                    className="w-full pl-12 pr-4 py-3 bg-blue-950 border border-blue-700 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all uppercase"
-                  />
-                </div>
-              </div>
-              <button
-                disabled={!roomId.trim() || isJoining}
-                onClick={handleJoin}
-                className="w-full py-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-bold text-xl transition-all shadow-xl"
-              >
-                {isJoining ? 'Entrando...' : 'Entrar na Sala'}
-              </button>
-            </>
+            <AnimatePresence mode="wait">
+              {step === 'search' ? (
+                <motion.div
+                  key="search"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                >
+                  <div className="mb-8">
+                    <label className="block text-sm font-medium mb-2 text-blue-200">Código da Sala</label>
+                    <div className="relative">
+                      <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
+                      <input
+                        type="text"
+                        value={roomId}
+                        onChange={(e) => setRoomId(e.target.value.toUpperCase())}
+                        placeholder="EXP: ABCD12"
+                        className="w-full pl-12 pr-4 py-3 bg-blue-950 border border-blue-700 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all uppercase"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    disabled={!roomId.trim() || isSearching}
+                    onClick={handleSearch}
+                    className="w-full py-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-bold text-xl transition-all shadow-xl"
+                  >
+                    {isSearching ? 'Buscando...' : 'Pesquisar Sala'}
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="password"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                >
+                  <div className="mb-4 p-4 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-center gap-3">
+                    <Globe className="w-6 h-6 text-green-400" />
+                    <div>
+                      <p className="text-xs text-green-400 font-bold uppercase">Sala Encontrada</p>
+                      <p className="text-lg font-black tracking-widest">{roomId}</p>
+                    </div>
+                    <button 
+                      onClick={() => setStep('search')}
+                      className="ml-auto text-xs text-blue-400 underline"
+                    >
+                      Alterar
+                    </button>
+                  </div>
+
+                  <div className="mb-8">
+                    <label className="block text-sm font-medium mb-2 text-blue-200">Senha da Sala</label>
+                    <div className="relative">
+                      <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Digite a senha"
+                        autoFocus
+                        className="w-full pl-12 pr-4 py-3 bg-blue-950 border border-blue-700 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    disabled={isJoining}
+                    onClick={handleJoin}
+                    className="w-full py-4 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-bold text-xl transition-all shadow-xl"
+                  >
+                    {isJoining ? 'Entrando...' : 'Confirmar e Entrar'}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           )}
         </div>
       </div>
