@@ -259,9 +259,14 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
           ...p,
           isOnline: onlineUids.includes(p.uid)
         }));
-        currentLocalRoomState = { ...currentLocalRoomState, players: updatedPlayers };
-        callback(currentLocalRoomState);
+        // Create a completely new room object to trigger React update
+        const updatedRoom = { ...currentLocalRoomState, players: updatedPlayers };
+        currentLocalRoomState = updatedRoom;
+        callback(updatedRoom);
       }
+      
+      // Always trigger a background refresh to catch any DB changes (new players)
+      refreshRoom();
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` }, () => {
       refreshRoom();

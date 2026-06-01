@@ -213,15 +213,11 @@ export default function App() {
         try {
           const freshRoom = await getRoom(onlineRoom.id!);
           if (freshRoom) {
-            // Only update if something changed to avoid unnecessary re-renders
-            if (freshRoom.status !== onlineRoom.status || 
-                freshRoom.players.length !== onlineRoom.players.length ||
-                freshRoom.currentPlayerIndex !== onlineRoom.currentPlayerIndex) {
-              setOnlineRoom(freshRoom);
-              setPlayers(freshRoom.players);
-              setCards(freshRoom.cards);
-              setGameStatus(freshRoom.status);
-            }
+            // Update the room state 
+            setOnlineRoom(freshRoom);
+            setPlayers(freshRoom.players);
+            setCards(freshRoom.cards);
+            setGameStatus(freshRoom.status);
           }
         } catch (e) {
           console.error("Polling error:", e);

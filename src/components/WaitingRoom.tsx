@@ -83,12 +83,12 @@ export function WaitingRoom({ room, userId, onStart, onLeave }: WaitingRoomProps
 
           <div className="mb-8 flex-grow">
             <h3 className="text-sm font-black text-blue-200 mb-4 flex items-center gap-2 uppercase tracking-tight">
-              <User className="w-4 h-4 text-blue-400" /> Jogadores ({room.players.length} / {room.maxPlayers || 6})
+              <User className="w-4 h-4 text-blue-400" /> JOGADORES ({room.players.length} / {room.maxPlayers || 6})
             </h3>
             <div className="space-y-3">
               {room.players.map((p, i) => (
                 <motion.div 
-                  key={p.uid}
+                  key={`${p.uid}-${i}`}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.1 }}
@@ -98,7 +98,11 @@ export function WaitingRoom({ room, userId, onStart, onLeave }: WaitingRoomProps
                     <div className={`w-3 h-3 rounded-full ${p.isOnline ? 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)]' : 'bg-slate-600 animate-pulse'}`} />
                     <span className={`font-bold ${p.isOnline ? 'text-white' : 'text-slate-400'}`}>{p.name}</span>
                   </div>
-                  {p.uid === room.ownerId && <span className="text-[10px] bg-yellow-400/20 text-yellow-500 px-2 py-0.5 rounded-lg uppercase font-black tracking-tighter shadow-inner">Host</span>}
+                  {p.uid === room.ownerId && (
+                    <span className="text-[10px] bg-yellow-400/20 text-yellow-500 px-2 py-1 rounded-lg uppercase font-black tracking-tighter shadow-inner border border-yellow-500/30">
+                      HOSPEDAR
+                    </span>
+                  )}
                 </motion.div>
               ))}
             </div>
