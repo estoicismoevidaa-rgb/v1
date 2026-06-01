@@ -46,13 +46,10 @@ export function OnlineMPConfig({ onBack, onCreate, onJoin, initialNickname = '' 
     if (!roomId.trim() || isSearching) return;
     setIsSearching(true);
     try {
-      // We need a way to check if room exists without joining
-      // I'll use the onJoin with a specific flag or just let it handle the logic
-      // But for better UX, I'll add a check here
-      const { supabase } = await import('../lib/supabase.ts');
-      const { data, error } = await supabase.from('rooms').select('id, password').eq('id', roomId.toUpperCase()).single();
+      const { getRoom } = await import('../lib/supabase-service.ts');
+      const data = await getRoom(roomId.toUpperCase());
       
-      if (error || !data) {
+      if (!data) {
         alert('Sala não encontrada! Verifique o código.');
         return;
       }

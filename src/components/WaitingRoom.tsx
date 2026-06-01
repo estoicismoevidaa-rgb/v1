@@ -76,8 +76,8 @@ export function WaitingRoom({ room, userId, onStart, onLeave }: WaitingRoomProps
                 className="flex items-center justify-between bg-blue-950/80 p-3 rounded-xl border border-blue-800"
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${p.uid === room.ownerId ? 'bg-yellow-400' : 'bg-green-400'}`} />
-                  <span className="font-medium">{p.name}</span>
+                  <div className={`w-2 h-2 rounded-full ${p.isOnline ? 'bg-green-400' : 'bg-slate-600 animate-pulse'}`} title={p.isOnline ? 'Online' : 'Offline'} />
+                  <span className={`font-medium ${p.isOnline ? 'text-white' : 'text-slate-400'}`}>{p.name}</span>
                 </div>
                 {p.uid === room.ownerId && <span className="text-[10px] bg-yellow-400/20 text-yellow-500 px-2 rounded uppercase font-bold">Host</span>}
               </motion.div>

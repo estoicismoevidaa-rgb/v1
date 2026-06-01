@@ -671,7 +671,14 @@ export default function App() {
               time={time}
               attempts={attempts}
               onRestart={restartGame}
-              onMenu={() => { setScreen('home'); setGameStatus('waiting'); }}
+              onMenu={() => { 
+                if (mode === 'online') {
+                  handleOnlineLeave();
+                } else {
+                  setScreen('home'); 
+                  setGameStatus('waiting'); 
+                }
+              }}
               onChangeDifficulty={() => setScreen(`${mode}-config`)}
             />
           ) : (
@@ -753,7 +760,15 @@ export default function App() {
         onClose={() => setIsPaused(false)}
         onRestart={() => { restartGame(); setIsPaused(false); }}
         onSettings={() => { setScreen('settings'); setIsPaused(false); }}
-        onMenu={() => { setScreen('home'); setIsPaused(false); setGameStatus('waiting'); }}
+        onMenu={() => { 
+          if (mode === 'online') {
+            handleOnlineLeave();
+          } else {
+            setScreen('home'); 
+            setGameStatus('waiting'); 
+          }
+          setIsPaused(false); 
+        }}
       />
     </div>
   );

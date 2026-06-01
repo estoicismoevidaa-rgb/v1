@@ -17,6 +17,7 @@ export interface Player {
   name: string;
   score: number;
   isHost?: boolean;
+  isOnline?: boolean;
 }
 
 export interface UserProfile {
