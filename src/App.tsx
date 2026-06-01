@@ -12,7 +12,9 @@ import {
   updateRoom, 
   joinRoom, 
   leaveRoom, 
-  subscribeToRoom 
+  subscribeToRoom,
+  submitSoloTime,
+  getGlobalRanking
 } from './lib/supabase-service.ts';
 import { 
   Difficulty, 
@@ -39,6 +41,7 @@ import { Settings } from './components/Settings.tsx';
 import { Ranking } from './components/Ranking.tsx';
 import { PauseMenu } from './components/PauseMenu.tsx';
 import { AuthScreen } from './components/AuthScreen.tsx';
+import { Lobby } from './components/Lobby.tsx';
 
 import { BackgroundAnimation } from './components/BackgroundAnimation.tsx';
 
@@ -64,6 +67,7 @@ export default function App() {
   
   // Online State
   const [onlineRoom, setOnlineRoom] = useState<GameRoom | null>(null);
+  const [isOnlineSolo, setIsOnlineSolo] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<any | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(true);
@@ -107,7 +111,6 @@ export default function App() {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // Check current Supabase session
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
@@ -123,7 +126,8 @@ export default function App() {
             const { error: upsertError } = await supabase.from('profiles').upsert([{
               uid,
               username,
-              email: session.user.email
+              email: session.user.email,
+              updated_at: new Date().toISOString()
             }]);
             
             if (!upsertError) {
@@ -131,36 +135,24 @@ export default function App() {
               setUserProfile(newProfile);
               navigateAfterAuth();
             } else {
-              setScreen('auth');
+              setScreen('home');
             }
           }
         } else {
-          // No session, check if we have a locally cached user ID from previous flow 
-          // (Legacy support or just checking if they ever logged in)
-          const uid = localStorage.getItem('fruit-memory-user-id');
-          if (uid) {
-            const profile = await getProfile(uid);
-            if (profile) {
-              setUserProfile(profile);
-              setCurrentUserId(uid);
-              navigateAfterAuth();
-            } else {
-              setScreen('auth');
-            }
-          } else {
-            setScreen('auth');
-          }
+          // Guest mode logic
+          const uid = getOrCreateUserId();
+          setCurrentUserId(uid);
+          setScreen('home');
         }
       } catch (err) {
         console.error('Auth check error:', err);
-        setScreen('auth');
+        setScreen('home');
       } finally {
         setIsAuthenticating(false);
       }
     };
 
     initAuth();
-    localStorage.setItem('auth-failed', 'false');
   }, [navigateAfterAuth]);
 
   const handleLogout = async () => {
@@ -266,6 +258,7 @@ export default function App() {
     if (selectedMode === 'solo') {
       setPlayers([{ uid: currentUserId || 'local', name: config.nickname, score: 0 }]);
       setCurrentPlayerIndex(0);
+      setIsOnlineSolo(config.isOnline || false);
       setGameStatus('playing');
       setScreen('game');
     } else if (selectedMode === 'local') {
@@ -284,6 +277,11 @@ export default function App() {
 
   const handleOnlineCreate = async (nickname: string, diff: Difficulty, password?: string) => {
     if (!currentUserId) return;
+    if (userProfile?.isGuest) {
+      alert('É necessário criar uma conta ou fazer login para criar salas online.');
+      setScreen('auth');
+      return;
+    }
     const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     const newRoom: GameRoom = {
       ownerId: currentUserId,
@@ -293,6 +291,8 @@ export default function App() {
       cards: generateCards(diff),
       currentPlayerIndex: 0,
       password: password || undefined,
+      maxPlayers: 6, // Default for private custom rooms
+      isPublic: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -316,6 +316,11 @@ export default function App() {
 
   const handleOnlineJoin = async (nickname: string, roomId: string, password?: string) => {
     if (!currentUserId) return;
+    if (userProfile?.isGuest) {
+      alert('É necessário criar uma conta ou fazer login para jogar online.');
+      setScreen('auth');
+      return;
+    }
     try {
       console.log('Attempting to join room:', roomId);
       const room = await getRoom(roomId);
@@ -445,6 +450,9 @@ export default function App() {
             if (mode === 'solo') {
               updateSoloRanking(time, attempts + 1);
               if (currentUserId) {
+                if (isOnlineSolo) {
+                  submitSoloTime(currentUserId, userProfile?.username || 'Anônimo', difficulty, time);
+                }
                 updateUserStats(currentUserId, difficulty, time, points);
               }
             } else if (mode === 'local') {
@@ -540,9 +548,9 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (screen === 'ranking') {
+    if (screen === 'ranking' || screen === 'lobby') {
       setLoadingGlobal(true);
-      getRanking().then(res => {
+      getGlobalRanking().then(res => {
         setGlobalRanking(res);
         setLoadingGlobal(false);
       }).catch(() => setLoadingGlobal(false));
@@ -608,6 +616,7 @@ export default function App() {
         {screen === 'auth' && (
           <AuthScreen 
             currentUid={currentUserId || getOrCreateUserId()} 
+            onBack={() => setScreen('home')}
             onAuthenticated={(profile) => {
               setCurrentUserId(profile.uid);
               setUserProfile(profile);
@@ -626,8 +635,12 @@ export default function App() {
 
         {screen === 'mode-selection' && (
           <ModeSelection onNavigate={setScreen} onChoice={(m) => {
-            setMode(m);
-            setScreen(`${m}-config`);
+            if (m === 'lobby') {
+              setScreen('lobby');
+            } else {
+              setMode(m as any);
+              setScreen(`${m}-config`);
+            }
           }} />
         )}
 
@@ -652,6 +665,16 @@ export default function App() {
             onCreate={handleOnlineCreate}
             onJoin={handleOnlineJoin}
             initialNickname={userProfile?.username}
+          />
+        )}
+
+        {screen === 'lobby' && (
+          <Lobby 
+            onBack={() => setScreen('mode-selection')}
+            onJoinRoom={(roomId) => handleOnlineJoin(userProfile?.username || 'Jogador', roomId)}
+            onStartSolo={(diff, isOnline) => startGame('solo', { nickname: userProfile?.username || 'Jogador', difficulty: diff, isOnline })}
+            isLoggedIn={!!userProfile}
+            onAuth={() => setScreen('auth')}
           />
         )}
 

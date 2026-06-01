@@ -22,6 +22,33 @@ export function Home({ onNavigate, onLogout, username }: HomeProps) {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] p-4 text-white">
+      {onLogout && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="absolute top-4 right-4"
+        >
+          {username ? (
+              <button 
+                onClick={() => onNavigate('settings')}
+                className="flex items-center gap-3 px-4 py-2 bg-blue-900/40 rounded-xl border border-blue-700 hover:bg-blue-800 transition-all"
+              >
+                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs">
+                  {username[0].toUpperCase()}
+                </div>
+                <span className="font-bold text-sm hidden sm:inline">{username}</span>
+              </button>
+          ) : (
+            <button 
+              onClick={() => onNavigate('auth')}
+              className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-500 rounded-xl font-bold transition-all shadow-lg active:scale-95"
+            >
+              <Users className="w-4 h-4" /> Entrar / Cadastro
+            </button>
+          )}
+        </motion.div>
+      )}
+
       <motion.div
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -49,22 +76,6 @@ export function Home({ onNavigate, onLogout, username }: HomeProps) {
             </motion.button>
           ))}
         </div>
-
-        {onLogout && (
-          <motion.button
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            onClick={onLogout}
-            className="mt-12 px-6 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-3 cursor-pointer group"
-          >
-            <Users className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            <div className="text-left">
-              <p className="text-[10px] uppercase tracking-widest font-bold opacity-60">Logado como</p>
-              <p className="text-sm font-bold text-white">{username} <span className="text-red-400 font-normal ml-1">(Sair)</span></p>
-            </div>
-          </motion.button>
-        )}
       </div>
   );
 }

@@ -4,18 +4,19 @@
  */
 
 import { motion } from 'motion/react';
-import { User, Users, Globe, ChevronLeft } from 'lucide-react';
+import { User, Users, Globe, ChevronLeft, Lock } from 'lucide-react';
 
 interface ModeSelectionProps {
   onNavigate: (screen: string) => void;
-  onChoice: (mode: 'solo' | 'local' | 'online') => void;
+  onChoice: (mode: 'solo' | 'local' | 'online' | 'lobby') => void;
 }
 
 export function ModeSelection({ onNavigate, onChoice }: ModeSelectionProps) {
   const modes = [
     { id: 'solo', label: 'Solo', icon: <User className="w-10 h-10" />, desc: 'Jogue sozinho e quebre recordes' },
     { id: 'local', label: 'Multiplayer Local', icon: <Users className="w-10 h-10" />, desc: 'Jogue com amigos no mesmo aparelho' },
-    { id: 'online', label: 'Online por Link', icon: <Globe className="w-10 h-10" />, desc: 'Desafie amigos à distância' },
+    { id: 'lobby', label: 'Online Lobby', icon: <Globe className="w-10 h-10" />, desc: 'Salas públicas e ranking mundial solo' },
+    { id: 'online', label: 'Sala Privada', icon: <Lock className="w-10 h-10" />, desc: 'Crie uma sala com link para amigos' },
   ];
 
   return (

@@ -235,6 +235,7 @@ export async function getRanking(): Promise<RankingEntry[]> {
     const { data, error } = await supabase
       .from('stats')
       .select(`
+        uid,
         total_points,
         games_played,
         best_time_easy,
@@ -249,6 +250,7 @@ export async function getRanking(): Promise<RankingEntry[]> {
     if (error) throw error;
 
     return (data || []).map((row: any) => ({
+      uid: row.uid || 'anon',
       username: row.profiles?.username || 'Anônimo',
       avatarUrl: row.profiles?.avatar_url,
       totalPoints: row.total_points,

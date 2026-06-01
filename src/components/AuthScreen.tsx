@@ -5,16 +5,17 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Mail, CheckCircle2, AlertCircle, Loader2, LogIn, UserPlus, Lock } from 'lucide-react';
+import { User, Mail, CheckCircle2, AlertCircle, Loader2, LogIn, UserPlus, Lock, ChevronLeft } from 'lucide-react';
 import { checkUsernameExists, registerProfile, loginProfile } from '../lib/profile-service.ts';
 import { UserProfile } from '../types.ts';
 
 interface AuthScreenProps {
-  onAuthenticated: (profile: UserProfile) => void;
+  onAuthenticated: (profile: UserProfile & { isGuest?: boolean }) => void;
+  onBack?: () => void;
   currentUid: string;
 }
 
-export function AuthScreen({ onAuthenticated, currentUid }: AuthScreenProps) {
+export function AuthScreen({ onAuthenticated, onBack, currentUid }: AuthScreenProps) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -67,11 +68,12 @@ export function AuthScreen({ onAuthenticated, currentUid }: AuthScreenProps) {
   };
 
   const handleGuestMode = () => {
-    const guestProfile: UserProfile = {
+    const guestProfile: UserProfile & { isGuest: boolean } = {
       uid: currentUid,
       username: 'Convidado',
       email: 'guest@local',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      isGuest: true
     };
     onAuthenticated(guestProfile);
   };
@@ -114,6 +116,14 @@ export function AuthScreen({ onAuthenticated, currentUid }: AuthScreenProps) {
         animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden relative"
       >
+        {onBack && (
+          <button 
+            onClick={onBack}
+            className="absolute top-6 left-6 p-2 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all z-20"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+        )}
         <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/20 blur-[80px] rounded-full pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-green-500/20 blur-[80px] rounded-full pointer-events-none" />
 

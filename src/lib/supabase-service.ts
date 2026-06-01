@@ -45,10 +45,12 @@ function parseDBRoom(data: any): GameRoom {
     ownerId: data.owner_id,
     status: data.status,
     difficulty: data.difficulty,
-    players: typeof data.players === 'string' ? JSON.parse(data.players) : data.players,
-    cards: typeof data.cards === 'string' ? JSON.parse(data.cards) : data.cards,
-    currentPlayerIndex: data.current_player_index,
+    players: typeof data.players === 'string' ? JSON.parse(data.players) : (data.players || []),
+    cards: typeof data.cards === 'string' ? JSON.parse(data.cards) : (data.cards || []),
+    currentPlayerIndex: data.current_player_index || 0,
     password: data.password,
+    maxPlayers: data.max_players || 2,
+    isPublic: data.is_public || false,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     gameStartedAt: data.game_started_at
@@ -98,7 +100,7 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
     })
     .on('broadcast', { event: 'room_deleted' }, () => {
       // Room was deleted, trigger exit
-      callback({ id: roomId, ownerId: '', status: 'finished', difficulty: 'Fácil', players: [], cards: [], currentPlayerIndex: 0, createdAt: '', updatedAt: '' });
+      callback({ id: roomId, ownerId: '', status: 'finished', difficulty: 'Fácil', players: [], cards: [], currentPlayerIndex: 0, createdAt: '', updatedAt: '', maxPlayers: 2, isPublic: false });
     })
     .subscribe(async (status: string) => {
       if (status === 'SUBSCRIBED') {
@@ -125,7 +127,7 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
             callback(room);
           } else if (payload.eventType === 'DELETE') {
             // Room deleted
-            callback({ id: roomId, ownerId: '', status: 'finished', difficulty: 'Fácil', players: [], cards: [], currentPlayerIndex: 0, createdAt: '', updatedAt: '' });
+            callback({ id: roomId, ownerId: '', status: 'finished', difficulty: 'Fácil', players: [], cards: [], currentPlayerIndex: 0, createdAt: '', updatedAt: '', maxPlayers: 2, isPublic: false });
           }
         }
       )
@@ -229,26 +231,24 @@ export async function createRoom(roomId: string, room: GameRoom): Promise<void> 
       cards: room.cards,
       current_player_index: room.currentPlayerIndex,
       password: room.password,
+      max_players: room.maxPlayers,
+      is_public: room.isPublic,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }]);
     if (error) {
-      // If password column missing, ignore it for now but try to insert without it
-      if (error.message.includes('column "password"')) {
-        await supabase.from('rooms').insert([{
-          id: roomId,
-          owner_id: room.ownerId,
-          status: room.status,
-          difficulty: room.difficulty,
-          players: room.players,
-          cards: room.cards,
-          current_player_index: room.currentPlayerIndex,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }]);
-      } else {
-        throw error;
-      }
+      // If columns missing, try to insert with minimal set
+      await supabase.from('rooms').insert([{
+        id: roomId,
+        owner_id: room.ownerId,
+        status: room.status,
+        difficulty: room.difficulty,
+        players: room.players,
+        cards: room.cards,
+        current_player_index: room.currentPlayerIndex,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }]);
     }
   } else {
     // Store locally on this host, broadcast to players
@@ -288,6 +288,8 @@ export async function getRoom(roomId: string): Promise<GameRoom | null> {
           players: [],
           cards: [],
           currentPlayerIndex: 0,
+          maxPlayers: 2,
+          isPublic: false,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
@@ -438,4 +440,129 @@ export async function leaveRoom(roomId: string, userId: string): Promise<void> {
       }
     });
   }
+}
+
+/** 
+ * NEW: Online Public Lobby Logic
+ */
+
+// Get all public rooms that are waiting for players
+export async function getPublicRooms(): Promise<GameRoom[]> {
+  const isDBActive = await checkTableExistence();
+  if (!isDBActive) return [];
+  
+  const { data, error } = await supabase
+    .from('rooms')
+    .select('*')
+    .eq('is_public', true)
+    .eq('status', 'waiting')
+    .order('created_at', { ascending: false });
+    
+  if (error || !data) return [];
+  return data.map(parseDBRoom);
+}
+
+// Find or Create a public room for a specific player count
+export async function findOrCreatePublicRoom(maxPlayers: number, difficulty: string, cards: any[]): Promise<string> {
+  const rooms = await getPublicRooms();
+  const availableRoom = rooms.find(r => r.maxPlayers === maxPlayers && r.players.length < maxPlayers && r.difficulty === difficulty);
+  
+  if (availableRoom) {
+    return availableRoom.id!;
+  }
+  
+  // Create a new one
+  const roomId = `PUB-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  const userId = getOrCreateUserId();
+  const room: GameRoom = {
+    ownerId: userId,
+    status: 'waiting',
+    difficulty: difficulty as any,
+    players: [], // Will join immediately after
+    cards: cards,
+    currentPlayerIndex: 0,
+    maxPlayers: maxPlayers,
+    isPublic: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  
+  await createRoom(roomId, room);
+  return roomId;
+}
+
+/**
+ * NEW: Ranking & Stats Logic
+ */
+
+// Submit a solo time to global ranking
+export async function submitSoloTime(userId: string, username: string, difficulty: string, time: number): Promise<void> {
+  const isDBActive = await checkTableExistence();
+  if (!isDBActive) return;
+
+  // 1. Ensure profile exists (update username if needed)
+  await supabase.from('profiles').upsert([{ 
+    uid: userId, 
+    username: username,
+    updated_at: new Date().toISOString()
+  }], { onConflict: 'uid' });
+
+  // 2. Fetch current stats
+  const { data: stats } = await supabase
+    .from('stats')
+    .select('*')
+    .eq('uid', userId)
+    .maybeSingle();
+
+  const points = Math.max(10, 1000 - time * 2); // Simple points calculation
+  
+  const updates: any = {
+    uid: userId,
+    games_played: (stats?.games_played || 0) + 1,
+    total_points: (stats?.total_points || 0) + points,
+    last_played_at: new Date().toISOString()
+  };
+
+  // Update best time for difficulty
+  const timeField = difficulty === 'Fácil' ? 'best_time_easy' : 
+                   difficulty === 'Médio' ? 'best_time_medium' : 
+                   difficulty === 'Difícil' ? 'best_time_hard' : 'best_time_extreme';
+  
+  if (!stats?.[timeField] || time < stats[timeField]) {
+    updates[timeField] = time;
+  }
+
+  await supabase.from('stats').upsert([updates]);
+}
+
+// Get global ranking (ordered by total points or best time)
+export async function getGlobalRanking(limit: number = 20): Promise<any[]> {
+  const isDBActive = await checkTableExistence();
+  if (!isDBActive) return [];
+
+  const { data, error } = await supabase
+    .from('stats')
+    .select(`
+      uid,
+      total_points,
+      best_time_easy,
+      games_played,
+      profiles:uid (
+        username,
+        avatar_url
+      )
+    `)
+    .order('total_points', { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+  
+  return data.map((item: any) => ({
+    uid: item.uid,
+    username: item.profiles?.username || 'Anônimo',
+    avatarUrl: item.profiles?.avatar_url,
+    totalPoints: item.total_points,
+    bestTimeEasy: item.best_time_easy,
+    gamesPlayed: item.games_played
+  }));
 }

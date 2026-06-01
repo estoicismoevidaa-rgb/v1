@@ -41,6 +41,7 @@ export interface UserStats {
 }
 
 export interface RankingEntry {
+  uid: string;
   username: string;
   avatarUrl?: string;
   totalPoints: number;
@@ -59,6 +60,8 @@ export interface GameRoom {
   cards: Card[];
   currentPlayerIndex: number;
   password?: string;
+  maxPlayers: number;
+  isPublic: boolean;
   createdAt: any;
   updatedAt: any;
   gameStartedAt?: any;
