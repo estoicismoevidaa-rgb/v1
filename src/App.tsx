@@ -207,7 +207,7 @@ export default function App() {
       const setupSubscription = async () => {
         const unsub = await subscribeToRoom(onlineRoom.id!, (data) => {
           if (isUnsubscribed) return;
-          if (data && data.players && data.players.length > 0) {
+          if (data) {
             setOnlineRoom(data);
             setCards(data.cards || []);
             setPlayers(data.players || []);

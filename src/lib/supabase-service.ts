@@ -63,6 +63,11 @@ let lobbyUsers: any[] = [];
 let lobbyMessages: any[] = [];
 let lobbyCallback: ((users: any[], messages: any[]) => void) | null = null;
 
+// Room Chat State
+let roomChatChannel: any = null;
+let roomMessages: any[] = [];
+let roomMessagesCallback: ((messages: any[]) => void) | null = null;
+
 export async function subscribeToLobby(callback: (users: any[], messages: any[]) => void): Promise<() => void> {
   const userId = getOrCreateUserId();
   const { data: profile } = await supabase.from('profiles').select('username').eq('uid', userId).maybeSingle();
@@ -146,6 +151,64 @@ export async function sendLobbyMessage(text: string): Promise<void> {
   if (lobbyCallback) lobbyCallback(lobbyUsers, lobbyMessages);
 }
 
+export async function subscribeToRoomChat(roomId: string, callback: (messages: any[]) => void): Promise<() => void> {
+  const channelId = `chat:${roomId}`;
+  const existing = (supabase as any).getChannels?.().find((c: any) => c.name === channelId);
+  if (existing) supabase.removeChannel(existing);
+
+  roomMessages = []; // Clear for new room
+  roomMessagesCallback = callback;
+  roomChatChannel = supabase.channel(channelId);
+
+  roomChatChannel
+    .on('broadcast', { event: 'message' }, (payload: any) => {
+      const newMessage = {
+        id: Math.random().toString(36).substring(7),
+        sender: payload.payload.name,
+        senderId: payload.payload.uid,
+        text: payload.payload.text,
+        timestamp: new Date().toISOString()
+      };
+      roomMessages = [...roomMessages.slice(-49), newMessage];
+      if (roomMessagesCallback) roomMessagesCallback(roomMessages);
+    })
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(roomChatChannel);
+    roomChatChannel = null;
+    roomMessagesCallback = null;
+  };
+}
+
+export async function sendRoomMessage(roomId: string, text: string): Promise<void> {
+  if (!roomChatChannel) return;
+  const userId = getOrCreateUserId();
+  const { data: profile } = await supabase.from('profiles').select('username').eq('uid', userId).maybeSingle();
+  const username = profile?.username || 'Jogador';
+
+  await roomChatChannel.send({
+    type: 'broadcast',
+    event: 'message',
+    payload: {
+      uid: userId,
+      name: username,
+      text: text
+    }
+  });
+
+  // Local add
+  const newMessage = {
+    id: Math.random().toString(36).substring(7),
+    sender: username,
+    senderId: userId,
+    text: text,
+    timestamp: new Date().toISOString()
+  };
+  roomMessages = [...roomMessages.slice(-49), newMessage];
+  if (roomMessagesCallback) roomMessagesCallback(roomMessages);
+}
+
 // Subscribe to room changes: Either via Postgres changes or Broadcast channel
 export async function subscribeToRoom(roomId: string, callback: (room: GameRoom) => void): Promise<() => void> {
   const isDBActive = await checkTableExistence();
@@ -183,9 +246,10 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
         callback(currentLocalRoomState);
       }
     })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` }, (payload) => {
-      if (payload.new && Object.keys(payload.new).length > 0) {
-        const room = parseDBRoom(payload.new);
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` }, async (payload) => {
+      // Always refetch full data to avoid partial update issues with Postgres Replicas
+      const room = await getRoom(roomId);
+      if (room) {
         // Preserve online status from current local state when merging DB update
         const onlineUids = Object.values(channel.presenceState()).flat().map((p: any) => p.uid);
         room.players = room.players.map(p => ({
@@ -332,10 +396,7 @@ export async function updateRoom(roomId: string, updates: Partial<GameRoom>): Pr
     await supabase.from('rooms').update(dbUpdates).eq('id', roomId);
     
     // Notify via broadcast for immediate refresh on all clients
-    const sigId = `room:${roomId}`;
-    const existing = (supabase as any).getChannels?.().find((c: any) => c.name === sigId);
-    if (existing) supabase.removeChannel(existing);
-    
+    const sigId = `signal:${roomId}`;
     const channel = supabase.channel(sigId);
     channel.subscribe((status: string) => {
       if (status === 'SUBSCRIBED') {
@@ -379,10 +440,7 @@ export async function joinRoom(roomId: string, player: Player): Promise<void> {
         .eq('id', roomId);
         
       // Broadcast force refresh
-      const sigId = `room:${roomId}`;
-      const existing = (supabase as any).getChannels?.().find((c: any) => c.name === sigId);
-      if (existing) supabase.removeChannel(existing);
-      
+      const sigId = `signal:${roomId}`;
       const channel = supabase.channel(sigId);
       channel.subscribe((status: string) => {
         if (status === 'SUBSCRIBED') {
@@ -443,10 +501,7 @@ export async function leaveRoom(roomId: string, userId: string): Promise<void> {
     }
     
     // Broadcast force refresh
-    const sigId = `room:${roomId}`;
-    const existing = (supabase as any).getChannels?.().find((c: any) => c.name === sigId);
-    if (existing) supabase.removeChannel(existing);
-    
+    const sigId = `signal:${roomId}`;
     const channel = supabase.channel(sigId);
     channel.subscribe((status: string) => {
       if (status === 'SUBSCRIBED') {
@@ -501,11 +556,14 @@ export async function findOrCreatePublicRoom(maxPlayers: number, difficulty: str
   // Create a new one
   const roomId = `PUB-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
   const userId = getOrCreateUserId();
+  const { data: profile } = await supabase.from('profiles').select('username').eq('uid', userId).maybeSingle();
+  const username = profile?.username || 'Jogador';
+  
   const room: GameRoom = {
     ownerId: userId,
     status: 'waiting',
     difficulty: difficulty as any,
-    players: [], // Will join immediately after
+    players: [{ uid: userId, name: username, score: 0, isHost: true }],
     cards: cards,
     currentPlayerIndex: 0,
     maxPlayers: maxPlayers,
