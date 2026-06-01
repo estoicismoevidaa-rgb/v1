@@ -5,11 +5,14 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const rawUrl = (import.meta as any).env?.VITE_SUPABASE_URL;
-const rawKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY;
+const HARDCODED_URL = 'https://qtcexymeadsenoycdvrk.supabase.co';
+const HARDCODED_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0Y2V4eW1lYWRzZW5veWNkdnJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTU5Nzk4MDMsImV4cCI6MjAzMTU1NTgwM30.Vp-7_8G_8-e6oU4S6S689QJ_5beQA-Fx';
 
-let SUPABASE_URL = (rawUrl && rawUrl.trim()) || 'https://qtcexymeadsenoycdvrk.supabase.co';
-let SUPABASE_ANON_KEY = (rawKey && rawKey.trim()) || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0Y2V4eW1lYWRzZW5veWNkdnJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTU5Nzk4MDMsImV4cCI6MjAzMTU1NTgwM30.Vp-7_8G_8-e6oU4S6S689QJ_5beQA-Fx';
+const VITE_URL = (import.meta as any).env?.VITE_SUPABASE_URL;
+const VITE_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY;
+
+let SUPABASE_URL = (VITE_URL && VITE_URL.trim()) || HARDCODED_URL;
+let SUPABASE_ANON_KEY = (VITE_KEY && VITE_KEY.trim()) || HARDCODED_KEY;
 
 // Sanitize URL: Remove trailing slash and specifically /rest/v1 if included by mistake
 SUPABASE_URL = SUPABASE_URL.replace(/\/$/, '').replace(/\/rest\/v1$/, '');
@@ -22,7 +25,7 @@ console.log('Fruit Memory Supabase Init:', {
   endpoint: SUPABASE_URL,
   keyPrefix: SUPABASE_ANON_KEY.substring(0, 6) + '...',
   keySuffix: '...' + SUPABASE_ANON_KEY.substring(SUPABASE_ANON_KEY.length - 6),
-  source: rawKey ? 'Environment Secret' : 'Hardcoded Default'
+  source: VITE_KEY ? 'Environment Secret' : 'Hardcoded Default'
 });
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
