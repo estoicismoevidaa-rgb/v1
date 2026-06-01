@@ -14,6 +14,7 @@ import {
   leaveRoom, 
   subscribeToRoom,
   sendCardFlip,
+  sendCardReset,
   submitSoloTime,
   submitOnlineScore,
   getGlobalRanking
@@ -212,14 +213,23 @@ export default function App() {
     if (mode === 'online' && onlineRoom?.id && (screen === 'waiting-room' || screen === 'game')) {
       const poller = setInterval(async () => {
         try {
-          const freshRoom = await getRoom(onlineRoom.id!);
-          if (freshRoom) {
-            // Update the room state 
-            setOnlineRoom(freshRoom);
-            setPlayers(freshRoom.players);
-            setCards(freshRoom.cards);
-            setGameStatus(freshRoom.status);
-          }
+            const freshRoom = await getRoom(onlineRoom.id!);
+            if (freshRoom) {
+              // Update the room state 
+              setOnlineRoom(freshRoom);
+              setPlayers(freshRoom.players);
+              // Important: only sync cards if we are not currently processing a move
+              // to avoid flickering and "stuck" cards during animations
+              if (!isProcessing) {
+                setCards(freshRoom.cards);
+              }
+              setGameStatus(freshRoom.status);
+              
+              // Heartbeat: Host refreshes updated_at to stay visible in public lobby
+              if (freshRoom.ownerId === currentUserId && freshRoom.status === 'waiting') {
+                updateRoom(freshRoom.id, {}).catch(() => {});
+              }
+            }
         } catch (e) {
           console.error("Polling error:", e);
         }
@@ -241,7 +251,10 @@ export default function App() {
             if (data) {
               // Ensure we merge states carefully
               setOnlineRoom(data);
-              setCards(data.cards || []);
+              // Only sync cards if we are not actively processing a move transition
+              if (!isProcessing) {
+                setCards(data.cards || []);
+              }
               setPlayers(data.players || []);
               setCurrentPlayerIndex(data.currentPlayerIndex ?? 0);
               setGameStatus(data.status || 'waiting');
@@ -548,6 +561,8 @@ export default function App() {
             await updateRoom(onlineRoom.id, {
               cards: updatedCards
             });
+            // Fast reset signal for others
+            sendCardReset(onlineRoom.id, [firstIdx, secondIdx]);
           }
         }
       }, 1000);

@@ -284,6 +284,17 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
         }
       }
     })
+    .on('broadcast', { event: 'card_reset' }, (payload: any) => {
+      if (currentLocalRoomState && payload.payload?.indices) {
+        const indices = payload.payload.indices;
+        indices.forEach((idx: number) => {
+          if (currentLocalRoomState!.cards[idx]) {
+            currentLocalRoomState!.cards[idx].isFlipped = false;
+          }
+        });
+        callback({ ...currentLocalRoomState });
+      }
+    })
     .on('broadcast', { event: 'room_deleted' }, () => {
       callback(null as any);
     })
@@ -426,6 +437,36 @@ export async function sendCardFlip(roomId: string, index: number): Promise<void>
         type: 'broadcast',
         event: 'card_flip',
         payload: { index }
+      });
+      setTimeout(() => supabase.removeChannel(mainChannel), 500);
+    }
+  });
+}
+
+// Send a fast signal for cards flipping back on mismatch
+export async function sendCardReset(roomId: string, indices: number[]): Promise<void> {
+  const sigId = `fast-reset-${roomId}-${Math.random().toString(36).substring(7)}`;
+  const channel = supabase.channel(sigId);
+  channel.subscribe((status: string) => {
+    if (status === 'SUBSCRIBED') {
+      channel.send({
+        type: 'broadcast',
+        event: 'card_reset',
+        payload: { indices }
+      });
+      setTimeout(() => supabase.removeChannel(channel), 500);
+    }
+  });
+
+  // Also via main signal channel
+  const mainSigId = `room-signal:${roomId}`;
+  const mainChannel = supabase.channel(mainSigId);
+  mainChannel.subscribe((status: string) => {
+    if (status === 'SUBSCRIBED') {
+      mainChannel.send({
+        type: 'broadcast',
+        event: 'card_reset',
+        payload: { indices }
       });
       setTimeout(() => supabase.removeChannel(mainChannel), 500);
     }
@@ -577,15 +618,23 @@ export async function getPublicRooms(): Promise<GameRoom[]> {
   const isDBActive = await checkTableExistence();
   if (!isDBActive) return [];
   
+  // Only show rooms that were updated in the last 5 minutes to avoid ghost rooms from crashed sessions
+  const staleThreshold = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+
   const { data, error } = await supabase
     .from('rooms')
     .select('*')
     .eq('is_public', true)
     .eq('status', 'waiting')
+    .gt('updated_at', staleThreshold)
     .order('created_at', { ascending: false });
     
   if (error || !data) return [];
-  return data.map(parseDBRoom);
+
+  // Filter in memory to ensure we only show rooms with space and at least one player
+  return data
+    .map(parseDBRoom)
+    .filter(r => r.players.length > 0 && r.players.length < r.maxPlayers);
 }
 
 // Find or Create a public room for a specific player count

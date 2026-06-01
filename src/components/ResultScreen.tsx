@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 import { Trophy, RotateCcw, Home, List, Star, Flame, MinusCircle, PlusCircle } from 'lucide-react';
 import { Player } from '../types.ts';
 import { calculateOnlineRankingPoints } from '../lib/game-logic.ts';
+import { audioController } from '../lib/audio.ts';
 
 interface ResultScreenProps {
   mode: 'solo' | 'local' | 'online';
@@ -22,6 +23,9 @@ interface ResultScreenProps {
 
 export function ResultScreen({ mode, players, time, attempts, onRestart, onMenu, onChangeDifficulty }: ResultScreenProps) {
   useEffect(() => {
+    // Play victory sound
+    audioController.play('victory');
+
     const duration = 3 * 1000;
     const end = Date.now() + duration;
 

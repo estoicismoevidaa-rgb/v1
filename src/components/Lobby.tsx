@@ -87,11 +87,11 @@ export function Lobby({ onBack, onJoinRoom, onStartSolo, isLoggedIn, onAuth }: L
   };
 
   const publicOptions = [
-    { players: 2, label: 'Dueto Online', icon: <Users className="w-6 h-6" /> },
-    { players: 3, label: 'Trio Online', icon: <Users className="w-6 h-6" /> },
-    { players: 4, label: 'Squad Online', icon: <Users className="w-6 h-6" /> },
-    { players: 5, label: 'Quinteto Online', icon: <Users className="w-6 h-6" /> },
-    { players: 6, label: 'Sexteto Online', icon: <Users className="w-6 h-6" /> },
+    { players: 2, label: '2 Players', icon: <Users className="w-6 h-6" /> },
+    { players: 3, label: '3 Players', icon: <Users className="w-6 h-6" /> },
+    { players: 4, label: '4 Players', icon: <Users className="w-6 h-6" /> },
+    { players: 5, label: '5 Players', icon: <Users className="w-6 h-6" /> },
+    { players: 6, label: '6 Players', icon: <Users className="w-6 h-6" /> },
   ];
 
   return (
