@@ -672,6 +672,27 @@ export async function submitSoloTime(userId: string, username: string, difficult
   await supabase.from('stats').upsert([updates]);
 }
 
+// Submit online points to global ranking
+export async function submitOnlineScore(userId: string, points: number): Promise<void> {
+  const isDBActive = await checkTableExistence();
+  if (!isDBActive) return;
+
+  const { data: stats } = await supabase
+    .from('stats')
+    .select('total_points, games_played')
+    .eq('uid', userId)
+    .maybeSingle();
+
+  const updates = {
+    uid: userId,
+    total_points: (stats?.total_points || 0) + points,
+    games_played: (stats?.games_played || 0) + 1,
+    last_played_at: new Date().toISOString()
+  };
+
+  await supabase.from('stats').upsert([updates]);
+}
+
 // Get global ranking (ordered by total points or best time)
 export async function getGlobalRanking(limit: number = 20): Promise<any[]> {
   const isDBActive = await checkTableExistence();

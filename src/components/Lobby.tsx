@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Globe, User, Users, ChevronLeft, Lock, Loader2, Trophy, MessageSquare, Send, Circle } from 'lucide-react';
+import { Globe, User, Users, ChevronLeft, Lock, Loader2, Trophy, MessageSquare, Send, Circle, List } from 'lucide-react';
 import { GameRoom } from '../types.ts';
 import { getPublicRooms, findOrCreatePublicRoom, subscribeToLobby, sendLobbyMessage } from '../lib/supabase-service.ts';
 import { generateCards } from '../lib/game-logic.ts';
@@ -75,9 +75,8 @@ export function Lobby({ onBack, onJoinRoom, onStartSolo, isLoggedIn, onAuth }: L
     }
     setJoining(maxPlayers);
     try {
-      // For public rooms, we use "Fácil" as default or let them choose?
-      // User didn't specify difficulty for public rooms, let's use Médio for a balanced experience
-      const difficulty = 'Médio';
+      // All online matches are forced to "Difícil" (Hard)
+      const difficulty = 'Difícil';
       const cards = generateCards(difficulty);
       const roomId = await findOrCreatePublicRoom(maxPlayers, difficulty, cards);
       onJoinRoom(roomId, maxPlayers);
@@ -157,7 +156,7 @@ export function Lobby({ onBack, onJoinRoom, onStartSolo, isLoggedIn, onAuth }: L
               </p>
               <button
                 disabled={!isLoggedIn}
-                onClick={() => onStartSolo('Médio', true)}
+                onClick={() => onStartSolo('Difícil', true)}
                 className={`w-full py-4 rounded-2xl font-black text-lg transition-all shadow-xl active:scale-95 ${
                   isLoggedIn 
                   ? 'bg-green-500 hover:bg-green-400 text-black shadow-green-500/20' 
@@ -199,9 +198,12 @@ export function Lobby({ onBack, onJoinRoom, onStartSolo, isLoggedIn, onAuth }: L
                         </div>
                         <div>
                           <span className="block font-black text-lg">{opt.label}</span>
-                          <span className="text-[10px] text-blue-400/60 uppercase font-bold tracking-widest">
-                            {opt.players} Jogadores
-                          </span>
+                          <div className="flex gap-2 items-center">
+                            <span className="text-[10px] text-blue-400/60 uppercase font-bold tracking-widest">
+                              {opt.players} Jogadores
+                            </span>
+                            <span className="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded font-black">DIFÍCIL</span>
+                          </div>
                         </div>
                       </div>
                       
@@ -220,10 +222,60 @@ export function Lobby({ onBack, onJoinRoom, onStartSolo, isLoggedIn, onAuth }: L
                 })}
               </div>
               
-              <p className="mt-8 text-center text-blue-400/40 text-[10px] font-bold uppercase tracking-widest">
-                Você será pareado automaticamente com outros jogadores
+              <p className="mt-8 text-center text-blue-400/40 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-4">
+                <span>Você será pareado automaticamente</span>
+                <span className="bg-blue-500/10 px-2 py-1 rounded text-blue-300">Modo Online: Difícil — 36 cartas</span>
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* List of active rooms */}
+        <div className="bg-blue-900/40 p-8 rounded-[2.5rem] border border-blue-700 mb-12">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-black flex items-center gap-2">
+              <List className="w-5 h-5 text-blue-400" /> Salas Públicas ({rooms.length})
+            </h2>
+            <button onClick={fetchRooms} className="text-xs text-blue-400 hover:text-blue-300 font-bold uppercase underline">
+              Atualizar
+            </button>
+          </div>
+          
+          <div className="space-y-3">
+            {rooms.length > 0 ? (
+              rooms.map((room) => (
+                <div key={room.id} className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 bg-blue-950/40 rounded-3xl border border-white/5 hover:border-blue-500/30 transition-all">
+                  <div className="flex items-center gap-4 w-full sm:w-auto">
+                    <div className="w-12 h-12 bg-blue-800 rounded-2xl flex items-center justify-center font-bold text-blue-200">
+                      {room.maxPlayers}
+                    </div>
+                    <div>
+                      <p className="font-black text-lg">Sala {room.id}</p>
+                      <div className="flex gap-2 items-center">
+                        <span className="text-[10px] text-blue-400 font-bold uppercase">{room.players.length}/{room.maxPlayers} Jogadores</span>
+                        <span className="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded font-black">DIFÍCIL</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-4 w-full sm:w-auto">
+                    <span className="px-3 py-1 bg-green-500/10 text-green-400 text-[10px] font-black uppercase rounded-lg border border-green-500/20">
+                      Aguardando
+                    </span>
+                    <button 
+                      onClick={() => onJoinRoom(room.id!)}
+                      className="flex-grow sm:flex-grow-0 px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-black text-sm transition-all shadow-lg active:scale-95"
+                    >
+                      Entrar
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-10 opacity-30 text-sm italic font-medium">
+                Nenhuma sala pública aberta no momento. Crie uma nova!
+              </div>
+            )}
           </div>
         </div>
 

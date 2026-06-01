@@ -21,7 +21,6 @@ export function OnlineMPConfig({ onBack, onCreate, onJoin, initialNickname = '' 
   
   const [activeTab, setActiveTab] = useState<'create' | 'join'>(initialRoomId ? 'join' : 'create');
   const [nickname, setNickname] = useState(initialNickname);
-  const [difficulty, setDifficulty] = useState<Difficulty>('Fácil');
   const [roomId, setRoomId] = useState(initialRoomId);
   const [password, setPassword] = useState('');
   const [step, setStep] = useState<'search' | 'password'>(initialRoomId ? 'password' : 'search');
@@ -58,7 +57,8 @@ export function OnlineMPConfig({ onBack, onCreate, onJoin, initialNickname = '' 
     setIsCreating(true);
     try {
       const finalNickname = nickname.trim() || `Player${Math.floor(Math.random() * 9000) + 1000}`;
-      await onCreate(finalNickname, difficulty, password);
+      // Online mode always forced to Hard difficulty
+      await onCreate(finalNickname, 'Difícil', password);
     } finally {
       setIsCreating(false);
     }
@@ -96,8 +96,6 @@ export function OnlineMPConfig({ onBack, onCreate, onJoin, initialNickname = '' 
       setIsJoining(false);
     }
   };
-
-  const difficulties: Difficulty[] = ['Fácil', 'Médio', 'Difícil', 'Extremo'];
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] p-4 text-white">
@@ -150,23 +148,12 @@ export function OnlineMPConfig({ onBack, onCreate, onJoin, initialNickname = '' 
 
           {activeTab === 'create' ? (
             <>
-              <div className="mb-8">
-                <label className="block text-sm font-medium mb-3 text-blue-200">Dificuldade</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {difficulties.map((d) => (
-                    <button
-                      key={d}
-                      onClick={() => setDifficulty(d)}
-                      className={`py-3 rounded-xl border-2 transition-all font-bold ${
-                        difficulty === d 
-                          ? 'bg-green-600 border-green-400 text-white' 
-                          : 'bg-blue-950 border-blue-700 text-blue-300'
-                      }`}
-                    >
-                      {d}
-                    </button>
-                  ))}
-                </div>
+              <div className="mb-8 p-4 bg-blue-500/10 border border-blue-500/30 rounded-2xl">
+                <p className="text-sm font-bold text-blue-400 mb-1">Dificuldade Fixa</p>
+                <p className="text-xl font-black text-white">DIFÍCIL — 36 CARTAS</p>
+                <p className="text-[10px] text-blue-400/60 mt-2 uppercase tracking-widest font-bold">
+                  Todas as partidas online são padronizadas
+                </p>
               </div>
               <div className="mb-8">
                 <label className="block text-sm font-medium mb-2 text-blue-200">Senha da Sala (Opcional)</label>

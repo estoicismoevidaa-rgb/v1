@@ -15,6 +15,7 @@ import {
   subscribeToRoom,
   sendCardFlip,
   submitSoloTime,
+  submitOnlineScore,
   getGlobalRanking
 } from './lib/supabase-service.ts';
 import { 
@@ -26,7 +27,7 @@ import {
   LocalRanking, 
   GameSettings 
 } from './types.ts';
-import { generateCards, DIFFICULTY_CONFIG } from './lib/game-logic.ts';
+import { generateCards, DIFFICULTY_CONFIG, calculateOnlineRankingPoints, OnlineScoreBreakdown } from './lib/game-logic.ts';
 import { audioController } from './lib/audio.ts';
 
 // Components
@@ -470,7 +471,12 @@ export default function App() {
           updatedCards[secondIdx].isMatched = true;
           
           const newPlayers = [...players];
-          newPlayers[currentPlayerIndex].score += 1;
+          const currentP = newPlayers[currentPlayerIndex];
+          currentP.score += 1;
+          currentP.currentCombo = (currentP.currentCombo || 0) + 1;
+          if (currentP.currentCombo > (currentP.maxCombo || 0)) {
+            currentP.maxCombo = currentP.currentCombo;
+          }
           setPlayers(newPlayers);
 
           setFlippedIndices([]);
@@ -498,6 +504,20 @@ export default function App() {
               const winner = [...newPlayers].sort((a,b) => b.score - a.score)[0];
               updateMultiplayerRanking(winner.name);
             }
+
+            // Online Scoring Submission
+            if (mode === 'online' && allMatched) {
+              const sorted = [...newPlayers].sort((a, b) => b.score - a.score);
+              const roomSize = players.length;
+              
+              sorted.forEach(async (p, idx) => {
+                const rank = idx + 1;
+                const breakdown = calculateOnlineRankingPoints(rank, roomSize, p.score, p.maxCombo);
+                if (p.uid === currentUserId) {
+                  await submitOnlineScore(p.uid, breakdown.totalPoints);
+                }
+              });
+            }
           }
 
           // Online Update
@@ -518,6 +538,9 @@ export default function App() {
           setIsProcessing(false);
           
           if (mode !== 'solo') {
+            const newPlayers = [...players];
+            newPlayers[currentPlayerIndex].currentCombo = 0;
+            setPlayers(newPlayers);
             nextTurn();
           }
 

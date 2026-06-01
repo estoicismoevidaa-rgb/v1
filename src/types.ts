@@ -18,6 +18,8 @@ export interface Player {
   score: number;
   isHost?: boolean;
   isOnline?: boolean;
+  maxCombo?: number;
+  currentCombo?: number;
 }
 
 export interface UserProfile {

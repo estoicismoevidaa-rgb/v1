@@ -39,3 +39,62 @@ export function generateCards(difficulty: Difficulty): Card[] {
     isMatched: false
   }));
 }
+
+export interface OnlineScoreBreakdown {
+  playerPairs: number;
+  pairPoints: number;
+  roomSizeBonus: number;
+  comboBonus: number;
+  penalty: number;
+  totalPoints: number;
+}
+
+export function calculateOnlineRankingPoints(
+  rank: number, 
+  roomSize: number, 
+  pairsFound: number, 
+  maxCombo: number = 0
+): OnlineScoreBreakdown {
+  const pairPoints = pairsFound * 10;
+  
+  // Room Size Bonus (Only for Winner)
+  let roomSizeBonus = 0;
+  if (rank === 1) {
+    if (roomSize === 2) roomSizeBonus = 50;
+    else if (roomSize === 3) roomSizeBonus = 60;
+    else if (roomSize === 4) roomSizeBonus = 70;
+    else if (roomSize === 5) roomSizeBonus = 80;
+    else if (roomSize === 6) roomSizeBonus = 100;
+  }
+  
+  // Combo Bonus (All players)
+  let comboBonus = 0;
+  if (maxCombo >= 5) comboBonus = 40;
+  else if (maxCombo === 4) comboBonus = 25;
+  else if (maxCombo === 3) comboBonus = 15;
+  
+  // Penalty (Losers)
+  let penalty = 0;
+  if (rank > 1) {
+    const penalties: Record<string, number[]> = {
+      '2': [0, 15],
+      '3': [0, 8, 12],
+      '4': [0, 5, 10, 15],
+      '5': [0, 4, 8, 12, 16],
+      '6': [0, 3, 6, 9, 12, 15]
+    };
+    const roomPenalties = penalties[roomSize.toString()] || [];
+    penalty = roomPenalties[rank - 1] || 0;
+  }
+  
+  const totalPoints = pairPoints + roomSizeBonus + comboBonus - penalty;
+  
+  return {
+    playerPairs: pairsFound,
+    pairPoints,
+    roomSizeBonus,
+    comboBonus,
+    penalty,
+    totalPoints
+  };
+}
