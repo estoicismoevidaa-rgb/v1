@@ -73,6 +73,7 @@ export default function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [time, setTime] = useState(0);
+  const [scoreSubmitted, setScoreSubmitted] = useState(false);
   
   // Online State
   const [onlineRoom, setOnlineRoom] = useState<GameRoom | null>(null);
@@ -323,6 +324,7 @@ export default function App() {
     setIsPaused(false);
     setFlippedIndices([]);
     setIsProcessing(false);
+    setScoreSubmitted(false);
 
     const initialCards = generateCards(config.difficulty);
     setCards(initialCards);
@@ -460,6 +462,20 @@ export default function App() {
     }
   };
 
+  // Submit score when game finishes
+  useEffect(() => {
+    if (gameStatus === 'finished' && !scoreSubmitted && mode === 'online' && currentUserId) {
+      setScoreSubmitted(true);
+      const myPlayer = players.find(p => p.uid === currentUserId);
+      if (myPlayer) {
+        const sorted = [...players].sort((a, b) => b.score - a.score);
+        const rank = sorted.findIndex(p => p.uid === currentUserId) + 1;
+        const breakdown = calculateOnlineRankingPoints(rank, players.length, myPlayer.score, myPlayer.maxCombo);
+        submitOnlineScore(currentUserId, breakdown.totalPoints).catch(console.error);
+      }
+    }
+  }, [gameStatus, scoreSubmitted, mode, currentUserId, players]);
+
   // Turn management
   const nextTurn = useCallback(() => {
     const nextIndex = (currentPlayerIndex + 1) % players.length;
@@ -551,20 +567,6 @@ export default function App() {
               const winner = [...newPlayers].sort((a,b) => b.score - a.score)[0];
               updateMultiplayerRanking(winner.name);
             }
-
-            // Online Scoring Submission
-            if (mode === 'online' && allMatched) {
-              const sorted = [...newPlayers].sort((a, b) => b.score - a.score);
-              const roomSize = players.length;
-              
-              sorted.forEach(async (p, idx) => {
-                const rank = idx + 1;
-                const breakdown = calculateOnlineRankingPoints(rank, roomSize, p.score, p.maxCombo);
-                if (p.uid === currentUserId) {
-                  await submitOnlineScore(p.uid, breakdown.totalPoints);
-                }
-              });
-            }
           }
 
           // Online Update: Match found
@@ -643,6 +645,7 @@ export default function App() {
   };
 
   const restartGame = () => {
+    setScoreSubmitted(false);
     if (mode === 'online' && onlineRoom?.id) {
       // Re-generate cards and reset status
       const newCards = generateCards(difficulty);

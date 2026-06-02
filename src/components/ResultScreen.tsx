@@ -111,7 +111,13 @@ export function ResultScreen({ mode, players, difficulty, time, attempts, onRest
           </div>
         ) : (
           <div className="my-8 text-left space-y-6">
-            <h3 className="text-xl text-blue-200 text-center mb-6">Resultados da Partida</h3>
+            {(mode === 'local' || mode === 'online') && sortedPlayers.length > 1 && sortedPlayers[0].score > sortedPlayers[1].score ? (
+               <h3 className="text-3xl font-black text-yellow-400 text-center mb-6">{sortedPlayers[0].name} Venceu!</h3>
+            ) : (mode === 'local' || mode === 'online') && sortedPlayers.length > 1 && sortedPlayers[0].score === sortedPlayers[1].score ? (
+               <h3 className="text-3xl font-black text-blue-200 text-center mb-6">Empate!</h3>
+            ) : (
+               <h3 className="text-xl text-blue-200 text-center mb-6">Resultados da Partida</h3>
+            )}
             <div className="space-y-4">
               {sortedPlayers.map((p, i) => {
                 const rank = i + 1;

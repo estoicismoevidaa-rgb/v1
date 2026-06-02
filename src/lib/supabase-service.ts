@@ -210,6 +210,8 @@ export async function sendRoomMessage(roomId: string, text: string): Promise<voi
   if (roomMessagesCallback) roomMessagesCallback(roomMessages);
 }
 
+let activeRoomChannel: any = null;
+
 // Subscribe to room changes: Either via Postgres changes or Broadcast channel
 export async function subscribeToRoom(roomId: string, callback: (room: GameRoom) => void): Promise<() => void> {
   const isDBActive = await checkTableExistence();
@@ -232,6 +234,7 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
   }
 
   const channel = supabase.channel(channelId);
+  activeRoomChannel = channel;
 
   const refreshRoom = async () => {
     const room = await getRoom(roomId);
@@ -321,6 +324,9 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
 
   return () => {
     supabase.removeChannel(channel);
+    if (activeRoomChannel === channel) {
+      activeRoomChannel = null;
+    }
   };
 }
 
@@ -423,63 +429,24 @@ export async function getRoom(roomId: string): Promise<GameRoom | null> {
 
 // Send a fast signal for a card flip to bypass DB delay
 export async function sendCardFlip(roomId: string, index: number): Promise<void> {
-  const sigId = `fast-flip-${roomId}-${Math.random().toString(36).substring(7)}`;
-  const channel = supabase.channel(sigId);
-  channel.subscribe((status: string) => {
-    if (status === 'SUBSCRIBED') {
-      channel.send({
-        type: 'broadcast',
-        event: 'card_flip',
-        payload: { roomId, index }
-      });
-      // Use shorter timeout for fast signals
-      setTimeout(() => supabase.removeChannel(channel), 500);
-    }
-  });
-
-  // Also notify via the main signal channel for the room
-  const mainSigId = `room-signal:${roomId}`;
-  const mainChannel = supabase.channel(mainSigId);
-  mainChannel.subscribe((status: string) => {
-    if (status === 'SUBSCRIBED') {
-      mainChannel.send({
-        type: 'broadcast',
-        event: 'card_flip',
-        payload: { index }
-      });
-      setTimeout(() => supabase.removeChannel(mainChannel), 500);
-    }
-  });
+  if (activeRoomChannel) {
+    activeRoomChannel.send({
+      type: 'broadcast',
+      event: 'card_flip',
+      payload: { index }
+    }).catch((e: any) => console.warn('Broadcast send failed:', e));
+  }
 }
 
 // Send a fast signal for cards flipping back on mismatch
 export async function sendCardReset(roomId: string, indices: number[]): Promise<void> {
-  const sigId = `fast-reset-${roomId}-${Math.random().toString(36).substring(7)}`;
-  const channel = supabase.channel(sigId);
-  channel.subscribe((status: string) => {
-    if (status === 'SUBSCRIBED') {
-      channel.send({
-        type: 'broadcast',
-        event: 'card_reset',
-        payload: { indices }
-      });
-      setTimeout(() => supabase.removeChannel(channel), 500);
-    }
-  });
-
-  // Also via main signal channel
-  const mainSigId = `room-signal:${roomId}`;
-  const mainChannel = supabase.channel(mainSigId);
-  mainChannel.subscribe((status: string) => {
-    if (status === 'SUBSCRIBED') {
-      mainChannel.send({
-        type: 'broadcast',
-        event: 'card_reset',
-        payload: { indices }
-      });
-      setTimeout(() => supabase.removeChannel(mainChannel), 500);
-    }
-  });
+  if (activeRoomChannel) {
+    activeRoomChannel.send({
+      type: 'broadcast',
+      event: 'card_reset',
+      payload: { indices }
+    }).catch((e: any) => console.warn('Broadcast send failed:', e));
+  }
 }
 
 // Update room fields
@@ -498,18 +465,13 @@ export async function updateRoom(roomId: string, updates: Partial<GameRoom>): Pr
     await supabase.from('rooms').update(dbUpdates).eq('id', roomId);
     
     // Notify via broadcast for immediate refresh on all clients
-    const sigId = `room-signal:${roomId}`;
-    const channel = supabase.channel(sigId);
-    channel.subscribe((status: string) => {
-      if (status === 'SUBSCRIBED') {
-        channel.send({
-          type: 'broadcast',
-          event: 'force_refresh',
-          payload: {}
-        });
-        setTimeout(() => supabase.removeChannel(channel), 1000);
-      }
-    });
+    if (activeRoomChannel) {
+      activeRoomChannel.send({
+        type: 'broadcast',
+        event: 'force_refresh',
+        payload: {}
+      }).catch((e: any) => console.warn('Broadcast send failed:', e));
+    }
   } else {
     if (currentLocalRoomState) {
       currentLocalRoomState = {
