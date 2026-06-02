@@ -233,7 +233,11 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
     supabase.removeChannel(existingChannel).catch(() => {});
   }
 
-  const channel = supabase.channel(channelId);
+  const channel = supabase.channel(channelId, {
+    config: {
+      broadcast: { ack: true }
+    }
+  });
   activeRoomChannel = channel;
 
   const refreshRoom = async () => {
@@ -456,13 +460,16 @@ export async function updateRoom(roomId: string, updates: Partial<GameRoom>): Pr
     const dbUpdates: any = {};
     if (updates.status !== undefined) dbUpdates.status = updates.status;
     if (updates.difficulty !== undefined) dbUpdates.difficulty = updates.difficulty;
-    if (updates.players !== undefined) dbUpdates.players = updates.players;
-    if (updates.cards !== undefined) dbUpdates.cards = updates.cards;
+    if (updates.players !== undefined) dbUpdates.players = JSON.stringify(updates.players);
+    if (updates.cards !== undefined) dbUpdates.cards = JSON.stringify(updates.cards);
     if (updates.currentPlayerIndex !== undefined) dbUpdates.current_player_index = updates.currentPlayerIndex;
     if (updates.gameStartedAt !== undefined) dbUpdates.game_started_at = updates.gameStartedAt;
     dbUpdates.updated_at = new Date().toISOString();
 
-    await supabase.from('rooms').update(dbUpdates).eq('id', roomId);
+    const { error } = await supabase.from('rooms').update(dbUpdates).eq('id', roomId);
+    if (error) {
+      console.error('Error updating room:', error);
+    }
     
     // Notify via broadcast for immediate refresh on all clients
     if (activeRoomChannel) {
@@ -696,9 +703,16 @@ export async function submitSoloTime(userId: string, username: string, difficult
 }
 
 // Submit online points to global ranking
-export async function submitOnlineScore(userId: string, points: number): Promise<void> {
+export async function submitOnlineScore(userId: string, points: number, username: string = 'Jogador'): Promise<void> {
   const isDBActive = await checkTableExistence();
   if (!isDBActive) return;
+
+  // 1. Ensure profile exists to satisfy foreign key constraint
+  await supabase.from('profiles').upsert([{ 
+    uid: userId, 
+    username: username,
+    updated_at: new Date().toISOString()
+  }], { onConflict: 'uid' });
 
   const { data: stats } = await supabase
     .from('stats')
@@ -734,7 +748,7 @@ export async function getGlobalRanking(mode: 'solo' | 'versus' = 'solo', limit: 
       versus_points,
       best_time_easy,
       games_played,
-      profiles:uid (
+      profiles (
         username,
         avatar_url
       )
@@ -742,7 +756,10 @@ export async function getGlobalRanking(mode: 'solo' | 'versus' = 'solo', limit: 
     .order(orderField, { ascending: false })
     .limit(limit);
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) console.error('getGlobalRanking error:', error);
+    return [];
+  }
   
   return data.map((item: any) => ({
     uid: item.uid,

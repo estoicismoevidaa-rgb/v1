@@ -71,6 +71,12 @@ export default function App() {
   const [gameStatus, setGameStatus] = useState<GameStatus>('waiting');
   const [flippedIndices, setFlippedIndices] = useState<number[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const isProcessingRef = useRef(false);
+
+  // Sync ref with state
+  useEffect(() => {
+    isProcessingRef.current = isProcessing;
+  }, [isProcessing]);
   const [attempts, setAttempts] = useState(0);
   const [time, setTime] = useState(0);
   const [scoreSubmitted, setScoreSubmitted] = useState(false);
@@ -245,7 +251,7 @@ export default function App() {
               setPlayers(freshRoom.players);
               // Important: only sync cards if we are not currently processing a move
               // to avoid flickering and "stuck" cards during animations
-              if (!isProcessing) {
+              if (!isProcessingRef.current) {
                 setCards(freshRoom.cards);
               }
               setGameStatus(freshRoom.status);
@@ -277,7 +283,7 @@ export default function App() {
               // Ensure we merge states carefully
               setOnlineRoom(data);
               // Only sync cards if we are not actively processing a move transition
-              if (!isProcessing) {
+              if (!isProcessingRef.current) {
                 setCards(data.cards || []);
               }
               setPlayers(data.players || []);
@@ -471,7 +477,7 @@ export default function App() {
         const sorted = [...players].sort((a, b) => b.score - a.score);
         const rank = sorted.findIndex(p => p.uid === currentUserId) + 1;
         const breakdown = calculateOnlineRankingPoints(rank, players.length, myPlayer.score, myPlayer.maxCombo);
-        submitOnlineScore(currentUserId, breakdown.totalPoints).catch(console.error);
+        submitOnlineScore(currentUserId, breakdown.totalPoints, myPlayer.name).catch(console.error);
       }
     }
   }, [gameStatus, scoreSubmitted, mode, currentUserId, players]);
