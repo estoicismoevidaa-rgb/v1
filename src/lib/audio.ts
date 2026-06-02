@@ -9,26 +9,20 @@ class AudioController {
   private musicEnabled: boolean = true;
 
   constructor() {
-    // In a real app, these would be URLs to assets. 
-    // For this build, I'll use placeholders or simple synthesized sounds if I could, 
-    // but standard approach is assets. I'll use some royalty free links or just placeholders.
-    const baseUrl = 'https://actions.google.com/sounds/v1/';
+    const baseUrl = 'https://storage.googleapis.com/shm-public-assets/audio/';
     this.sounds = {
-      click: new Audio(`${baseUrl}ui/button_click.ogg`),
+      click: new Audio(`${baseUrl}ui/click.ogg`),
       flip: new Audio(`${baseUrl}cards/card_flip.ogg`),
       match: new Audio(`${baseUrl}ui/positive_feedback.ogg`),
       error: new Audio(`${baseUrl}ui/negative_feedback.ogg`),
-      victory: new Audio(`${baseUrl}alarms/beep_short.ogg`), 
+      victory: new Audio(`${baseUrl}celebration/tada.ogg`), 
       fanfare: new Audio(`${baseUrl}celebration/horns_fanfare.ogg`),
-      combo: new Audio('/audio/combo.wav')
+      combo: new Audio(`${baseUrl}ui/success.ogg`)
     };
-
-    // Replace victory with fanfare if we want the 3s music
-    this.sounds.victory = this.sounds.fanfare;
 
     Object.values(this.sounds).forEach(audio => {
       audio.preload = 'auto';
-      audio.volume = 0.5;
+      audio.volume = 0.9;
       audio.load();
     });
   }
