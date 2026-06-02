@@ -499,7 +499,6 @@ export default function App() {
           const allMatched = updatedCards.every(c => c.isMatched);
           if (allMatched) {
             setGameStatus('finished');
-            audioController.play('victory');
             
             const points = difficulty === 'Fácil' ? 10 :
                            difficulty === 'Médio' ? 25 :

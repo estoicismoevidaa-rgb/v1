@@ -18,11 +18,17 @@ class AudioController {
       flip: new Audio(`${baseUrl}cards/card_flip.ogg`),
       match: new Audio(`${baseUrl}ui/positive_feedback.ogg`),
       error: new Audio(`${baseUrl}ui/negative_feedback.ogg`),
-      victory: new Audio(`${baseUrl}celebration/tada.ogg`)
+      victory: new Audio(`${baseUrl}alarms/beep_short.ogg`), 
+      fanfare: new Audio(`${baseUrl}celebration/horns_fanfare.ogg`)
     };
+
+    // Replace victory with fanfare if we want the 3s music
+    this.sounds.victory = this.sounds.fanfare;
 
     Object.values(this.sounds).forEach(audio => {
       audio.preload = 'auto';
+      audio.volume = 0.5;
+      audio.load();
     });
   }
 

@@ -23,8 +23,10 @@ interface ResultScreenProps {
 
 export function ResultScreen({ mode, players, time, attempts, onRestart, onMenu, onChangeDifficulty }: ResultScreenProps) {
   useEffect(() => {
-    // Play victory sound
-    audioController.play('victory');
+    // Play victory sound with a small delay for better reliability
+    const playTimer = setTimeout(() => {
+      audioController.play('victory');
+    }, 300);
 
     const duration = 3 * 1000;
     const end = Date.now() + duration;
@@ -50,6 +52,10 @@ export function ResultScreen({ mode, players, time, attempts, onRestart, onMenu,
       }
     };
     frame();
+
+    return () => {
+      clearTimeout(playTimer);
+    };
   }, []);
 
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
