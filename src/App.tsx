@@ -479,7 +479,6 @@ export default function App() {
       setTimeout(async () => {
         const updatedCards = [...newCards];
         if (isMatch) {
-          audioController.play('match');
           updatedCards[firstIdx].isMatched = true;
           updatedCards[secondIdx].isMatched = true;
           
@@ -487,6 +486,13 @@ export default function App() {
           const currentP = newPlayers[currentPlayerIndex];
           currentP.score += 1;
           currentP.currentCombo = (currentP.currentCombo || 0) + 1;
+          
+          if (currentP.currentCombo > 1) {
+            audioController.play('combo');
+          } else {
+            audioController.play('match');
+          }
+
           if (currentP.currentCombo > (currentP.maxCombo || 0)) {
             currentP.maxCombo = currentP.currentCombo;
           }

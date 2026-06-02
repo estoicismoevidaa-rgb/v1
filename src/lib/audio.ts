@@ -19,7 +19,8 @@ class AudioController {
       match: new Audio(`${baseUrl}ui/positive_feedback.ogg`),
       error: new Audio(`${baseUrl}ui/negative_feedback.ogg`),
       victory: new Audio(`${baseUrl}alarms/beep_short.ogg`), 
-      fanfare: new Audio(`${baseUrl}celebration/horns_fanfare.ogg`)
+      fanfare: new Audio(`${baseUrl}celebration/horns_fanfare.ogg`),
+      combo: new Audio('/audio/combo.wav')
     };
 
     // Replace victory with fanfare if we want the 3s music
