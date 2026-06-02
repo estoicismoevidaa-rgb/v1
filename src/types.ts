@@ -28,6 +28,7 @@ export interface UserProfile {
   email: string;
   createdAt: string;
   avatarUrl?: string;
+  isGuest?: boolean;
 }
 
 export interface UserStats {

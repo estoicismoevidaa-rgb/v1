@@ -10,9 +10,10 @@ interface HomeProps {
   onNavigate: (screen: string) => void;
   onLogout?: () => void;
   username?: string;
+  avatarUrl?: string;
 }
 
-export function Home({ onNavigate, onLogout, username }: HomeProps) {
+export function Home({ onNavigate, onLogout, username, avatarUrl }: HomeProps) {
   const menuItems = [
     { id: 'mode-selection', label: 'Jogar', icon: <Play className="w-6 h-6" />, color: 'bg-green-600 hover:bg-green-500' },
     { id: 'ranking', label: 'Ranking', icon: <Trophy className="w-6 h-6" />, color: 'bg-blue-600 hover:bg-blue-500' },
@@ -26,15 +27,19 @@ export function Home({ onNavigate, onLogout, username }: HomeProps) {
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="absolute top-4 right-4"
+          className="absolute top-4 right-4 animate-in fade-in slide-in-from-top-4 duration-300"
         >
           {username ? (
               <button 
                 onClick={() => onNavigate('settings')}
-                className="flex items-center gap-3 px-4 py-2 bg-blue-900/40 rounded-xl border border-blue-700 hover:bg-blue-800 transition-all"
+                className="flex items-center gap-3 px-4 py-2 bg-blue-900/40 rounded-xl border border-blue-700 hover:border-green-500 hover:bg-blue-800 transition-all cursor-pointer shadow-lg active:scale-95 duration-200"
               >
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs">
-                  {username[0].toUpperCase()}
+                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs overflow-hidden border border-blue-500/50">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
+                  ) : (
+                    username[0].toUpperCase()
+                  )}
                 </div>
                 <span className="font-bold text-sm hidden sm:inline">{username}</span>
               </button>

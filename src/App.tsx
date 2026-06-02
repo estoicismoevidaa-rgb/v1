@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getOrCreateUserId, supabase } from './lib/supabase.ts';
-import { getProfile, clearLocalProfile, updateUserStats, getRanking } from './lib/profile-service.ts';
+import { getProfile, clearLocalProfile, updateUserStats, getRanking, updateProfile } from './lib/profile-service.ts';
 import { 
   createRoom, 
   getRoom, 
@@ -152,6 +152,16 @@ export default function App() {
           // Guest mode logic
           const uid = getOrCreateUserId();
           setCurrentUserId(uid);
+          const profile = await getProfile(uid);
+          if (profile) {
+            setUserProfile(profile);
+          } else {
+            setUserProfile({
+              uid,
+              username: 'Jogador',
+              isGuest: true
+            });
+          }
           setScreen('home');
         }
       } catch (err) {
@@ -184,6 +194,13 @@ export default function App() {
     } catch (err) {
       console.error('Logout error:', err);
     }
+  };
+
+  const handleUpdateProfile = async (username: string, avatarUrl?: string) => {
+    if (!currentUserId) return;
+    const isGuest = userProfile?.isGuest || false;
+    const updated = await updateProfile(currentUserId, username, avatarUrl, isGuest);
+    setUserProfile(updated);
   };
 
   useEffect(() => {
@@ -471,6 +488,8 @@ export default function App() {
     // Fast signal for visual feedback to other online players
     if (mode === 'online' && onlineRoom?.id) {
       sendCardFlip(onlineRoom.id, index);
+      // AUTHORITATIVE SYNC: Also update DB immediately so observers see it
+      updateRoom(onlineRoom.id, { cards: newCards });
     }
     
     const newFlipped = [...flippedIndices, index];
@@ -521,9 +540,12 @@ export default function App() {
               updateSoloRanking(time, attempts + 1);
               if (currentUserId) {
                 if (isOnlineSolo) {
+                  // Only call submitSoloTime which now handles best times and points for solo online
                   submitSoloTime(currentUserId, userProfile?.username || 'Anônimo', difficulty, time, errors);
+                } else {
+                  // For normal solo (not online ranking), just update generic stats
+                  updateUserStats(currentUserId, difficulty, time, points, 'solo');
                 }
-                updateUserStats(currentUserId, difficulty, time, points);
               }
             } else if (mode === 'local') {
               const winner = [...newPlayers].sort((a,b) => b.score - a.score)[0];
@@ -545,7 +567,7 @@ export default function App() {
             }
           }
 
-          // Online Update
+          // Online Update: Match found
           if (mode === 'online' && onlineRoom?.id) {
             await updateRoom(onlineRoom.id, {
               cards: updatedCards,
@@ -562,19 +584,26 @@ export default function App() {
           setFlippedIndices([]);
           setIsProcessing(false);
           
+          let nextIndex = currentPlayerIndex;
+          let updatedPlayers = [...players];
+
           if (mode !== 'solo') {
-            const newPlayers = [...players];
-            newPlayers[currentPlayerIndex].currentCombo = 0;
-            setPlayers(newPlayers);
-            nextTurn();
+            updatedPlayers[currentPlayerIndex].currentCombo = 0;
+            setPlayers(updatedPlayers);
+            nextIndex = (currentPlayerIndex + 1) % players.length;
+            setCurrentPlayerIndex(nextIndex);
           }
 
           if (mode === 'online' && onlineRoom?.id) {
-            await updateRoom(onlineRoom.id, {
-              cards: updatedCards
-            });
-            // Fast reset signal for others
+            // Signal others immediately
             sendCardReset(onlineRoom.id, [firstIdx, secondIdx]);
+            
+            // Single consolidated update to avoid race conditions
+            await updateRoom(onlineRoom.id, {
+              cards: updatedCards,
+              currentPlayerIndex: nextIndex,
+              players: updatedPlayers
+            });
           }
         }
       }, 1000);
@@ -719,6 +748,7 @@ export default function App() {
             onNavigate={setScreen} 
             onLogout={handleLogout}
             username={userProfile?.username}
+            avatarUrl={userProfile?.avatarUrl}
           />
         )}
 
@@ -835,6 +865,8 @@ export default function App() {
             onUpdate={setSettings} 
             onBack={() => setScreen('home')} 
             onLogout={handleLogout}
+            userProfile={userProfile}
+            onUpdateProfile={handleUpdateProfile}
           />
         )}
 

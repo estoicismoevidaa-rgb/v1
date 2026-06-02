@@ -279,21 +279,29 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
       if (currentLocalRoomState && payload.payload?.index !== undefined) {
         const index = payload.payload.index;
         if (currentLocalRoomState.cards[index] && !currentLocalRoomState.cards[index].isFlipped) {
-          currentLocalRoomState.cards[index].isFlipped = true;
-          // Trigger instant callback with partial visual update
-          callback({ ...currentLocalRoomState });
+          // Immutable update for cards array
+          const newCards = [...currentLocalRoomState.cards];
+          newCards[index] = { ...newCards[index], isFlipped: true };
+          currentLocalRoomState = { ...currentLocalRoomState, cards: newCards };
+          callback(currentLocalRoomState);
         }
       }
     })
     .on('broadcast', { event: 'card_reset' }, (payload: any) => {
       if (currentLocalRoomState && payload.payload?.indices) {
         const indices = payload.payload.indices;
+        const newCards = [...currentLocalRoomState.cards];
+        let changed = false;
         indices.forEach((idx: number) => {
-          if (currentLocalRoomState!.cards[idx]) {
-            currentLocalRoomState!.cards[idx].isFlipped = false;
+          if (newCards[idx] && newCards[idx].isFlipped) {
+            newCards[idx] = { ...newCards[idx], isFlipped: false };
+            changed = true;
           }
         });
-        callback({ ...currentLocalRoomState });
+        if (changed) {
+          currentLocalRoomState = { ...currentLocalRoomState, cards: newCards };
+          callback(currentLocalRoomState);
+        }
       }
     })
     .on('broadcast', { event: 'room_deleted' }, () => {
@@ -705,6 +713,7 @@ export async function submitSoloTime(userId: string, username: string, difficult
   const points = soloResult.totalPoints;
   
   const updates: any = {
+    ...(stats || {}),
     uid: userId,
     games_played: (stats?.games_played || 0) + 1,
     total_points: (stats?.total_points || 0) + points,
@@ -731,11 +740,12 @@ export async function submitOnlineScore(userId: string, points: number): Promise
 
   const { data: stats } = await supabase
     .from('stats')
-    .select('total_points, versus_points, games_played')
+    .select('*')
     .eq('uid', userId)
     .maybeSingle();
 
   const updates = {
+    ...(stats || {}),
     uid: userId,
     total_points: (stats?.total_points || 0) + points,
     versus_points: (stats?.versus_points || 0) + points,
@@ -747,7 +757,7 @@ export async function submitOnlineScore(userId: string, points: number): Promise
 }
 
 // Get global ranking (ordered by solo points or versus points)
-export async function getGlobalRanking(mode: 'solo' | 'versus' = 'solo', limit: number = 20): Promise<any[]> {
+export async function getGlobalRanking(mode: 'solo' | 'versus' = 'solo', limit: number = 50): Promise<any[]> {
   const isDBActive = await checkTableExistence();
   if (!isDBActive) return [];
 

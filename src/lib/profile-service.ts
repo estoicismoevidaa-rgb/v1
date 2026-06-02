@@ -138,6 +138,8 @@ export async function registerProfile(username: string, email: string, password:
         uid: authData.user.id,
         games_played: 0,
         total_points: 0,
+        solo_points: 0,
+        versus_points: 0,
         last_played_at: new Date().toISOString()
       }]);
     }
@@ -188,7 +190,8 @@ export async function updateUserStats(
   uid: string, 
   difficulty: Difficulty, 
   timeInSeconds: number, 
-  points: number
+  points: number,
+  mode: 'solo' | 'versus' = 'solo'
 ): Promise<void> {
   try {
     // First get current stats to compare best times
@@ -207,11 +210,18 @@ export async function updateUserStats(
                     difficulty === 'Difícil' ? 'best_time_hard' : 'best_time_extreme';
 
     const updates: any = {
+      ...(currentStats || {}),
       uid,
       games_played: (currentStats?.games_played || 0) + 1,
       total_points: (currentStats?.total_points || 0) + points,
       last_played_at: new Date().toISOString()
     };
+
+    if (mode === 'solo') {
+      updates.solo_points = (currentStats?.solo_points || 0) + points;
+    } else {
+      updates.versus_points = (currentStats?.versus_points || 0) + points;
+    }
 
     // Update best time if it's better (lower)
     const oldBest = currentStats ? currentStats[diffKey] : null;
@@ -275,4 +285,77 @@ export async function getRanking(): Promise<RankingEntry[]> {
 export function clearLocalProfile(uid: string) {
   localStorage.removeItem(`profile_${uid}`);
   localStorage.removeItem(`stats_${uid}`);
+}
+
+/**
+ * Updates a user profile's username and avatar.
+ */
+export async function updateProfile(uid: string, username: string, avatarUrl?: string, isGuest: boolean = false): Promise<UserProfile> {
+  const cleanUsername = username.trim();
+  
+  if (!cleanUsername) {
+    throw new Error('O nome de usuário não pode estar vazio.');
+  }
+
+  // If they are not guest, checking username uniqueness in database is good.
+  if (!isGuest) {
+    try {
+      const { data: existing, error: checkError } = await supabase
+        .from('profiles')
+        .select('uid')
+        .eq('username', cleanUsername.toLowerCase())
+        .neq('uid', uid)
+        .maybeSingle();
+
+      if (existing) {
+        throw new Error('Este nome de usuário já está em uso!');
+      }
+    } catch (e: any) {
+      if (e.message === 'Este nome de usuário já está em uso!') {
+        throw e;
+      }
+      console.warn('Could not check username uniqueness from DB:', e);
+    }
+  }
+
+  const profile: UserProfile = {
+    uid,
+    username: cleanUsername,
+    email: '',
+    createdAt: new Date().toISOString(),
+    avatarUrl,
+    isGuest
+  };
+
+  try {
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('created_at, email')
+      .eq('uid', uid)
+      .maybeSingle();
+
+    const profileDataToSave = {
+      uid,
+      username: cleanUsername,
+      avatar_url: avatarUrl,
+      email: existingProfile?.email || '',
+      created_at: existingProfile?.created_at || new Date().toISOString()
+    };
+
+    const { error } = await supabase
+      .from('profiles')
+      .upsert([profileDataToSave]);
+
+    if (error) {
+      console.warn('Failed to upsert profile to Supabase, falling back to local storage:', error.message);
+    } else {
+      profile.createdAt = profileDataToSave.created_at;
+      profile.email = profileDataToSave.email;
+    }
+  } catch (err: any) {
+    console.warn('Upsert error - falling back to local storage:', err);
+  }
+
+  localStorage.setItem(`profile_${uid}`, JSON.stringify(profile));
+  return profile;
 }

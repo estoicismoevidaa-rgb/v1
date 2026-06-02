@@ -99,7 +99,11 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeCha
                         <div className="flex flex-col items-center">
                           <div className="relative mb-4">
                             <div className="w-20 h-20 rounded-full border-4 border-slate-400 bg-slate-800 flex items-center justify-center overflow-hidden shadow-2xl">
-                              <User className="w-10 h-10 text-slate-400" />
+                              {podium[1].avatarUrl ? (
+                                <img src={podium[1].avatarUrl} alt={podium[1].username} className="w-full h-full object-cover" />
+                              ) : (
+                                <User className="w-10 h-10 text-slate-400" />
+                              )}
                             </div>
                             <div className="absolute -bottom-2 -right-2 bg-slate-400 text-black w-8 h-8 rounded-full flex items-center justify-center font-black shadow-lg">2</div>
                           </div>
@@ -119,7 +123,11 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeCha
                           <Trophy className="w-12 h-12 text-yellow-400 mb-4 animate-bounce" />
                           <div className="relative mb-6">
                             <div className="w-28 h-28 rounded-full border-4 border-yellow-400 bg-slate-800 flex items-center justify-center overflow-hidden shadow-[0_0_50px_rgba(250,204,21,0.3)]">
-                              <User className="w-16 h-16 text-yellow-400" />
+                              {podium[0].avatarUrl ? (
+                                <img src={podium[0].avatarUrl} alt={podium[0].username} className="w-full h-full object-cover" />
+                              ) : (
+                                <User className="w-16 h-16 text-yellow-400" />
+                              )}
                             </div>
                             <div className="absolute -bottom-2 -right-2 bg-yellow-400 text-black w-10 h-10 rounded-full flex items-center justify-center font-black text-xl shadow-lg ring-4 ring-blue-950">1</div>
                           </div>
@@ -138,7 +146,11 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeCha
                         <div className="flex flex-col items-center">
                           <div className="relative mb-4">
                             <div className="w-20 h-20 rounded-full border-4 border-orange-600 bg-slate-800 flex items-center justify-center overflow-hidden shadow-2xl">
-                              <User className="w-10 h-10 text-orange-600" />
+                              {podium[2].avatarUrl ? (
+                                <img src={podium[2].avatarUrl} alt={podium[2].username} className="w-full h-full object-cover" />
+                              ) : (
+                                <User className="w-10 h-10 text-orange-600" />
+                              )}
                             </div>
                             <div className="absolute -bottom-2 -right-2 bg-orange-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-black shadow-lg">3</div>
                           </div>
@@ -164,8 +176,12 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeCha
                           <div key={i} className="flex items-center justify-between p-5 hover:bg-blue-600/10 transition-colors">
                             <div className="flex items-center gap-4">
                               <span className="w-8 font-black text-blue-600 text-lg">#{i + 4}</span>
-                              <div className="w-10 h-10 rounded-full bg-blue-900 flex items-center justify-center border border-blue-700">
-                                <User className="w-5 h-5 text-blue-400" />
+                              <div className="w-10 h-10 rounded-full bg-blue-900 flex items-center justify-center border border-blue-700 overflow-hidden">
+                                {entry.avatarUrl ? (
+                                  <img src={entry.avatarUrl} alt={entry.username} className="w-full h-full object-cover" />
+                                ) : (
+                                  <User className="w-5 h-5 text-blue-400" />
+                                )}
                               </div>
                               <span className="font-bold text-lg">{entry.username}</span>
                             </div>
