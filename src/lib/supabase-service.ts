@@ -5,6 +5,7 @@
 
 import { supabase, getOrCreateUserId } from './supabase.ts';
 import { GameRoom, Player } from '../types.ts';
+import { calculateSoloRankingPoints } from './game-logic.ts';
 
 // Realtime fallback listeners & local copies
 let broadcastChannel: any = null;
@@ -682,7 +683,7 @@ export async function findOrCreatePublicRoom(maxPlayers: number, difficulty: str
  */
 
 // Submit a solo time to global ranking
-export async function submitSoloTime(userId: string, username: string, difficulty: string, time: number): Promise<void> {
+export async function submitSoloTime(userId: string, username: string, difficulty: string, time: number, errors: number): Promise<void> {
   const isDBActive = await checkTableExistence();
   if (!isDBActive) return;
 
@@ -700,12 +701,14 @@ export async function submitSoloTime(userId: string, username: string, difficult
     .eq('uid', userId)
     .maybeSingle();
 
-  const points = Math.max(10, 1000 - time * 2); // Simple points calculation
+  const soloResult = calculateSoloRankingPoints(difficulty as any, time, errors);
+  const points = soloResult.totalPoints;
   
   const updates: any = {
     uid: userId,
     games_played: (stats?.games_played || 0) + 1,
     total_points: (stats?.total_points || 0) + points,
+    solo_points: (stats?.solo_points || 0) + points,
     last_played_at: new Date().toISOString()
   };
 
@@ -728,13 +731,14 @@ export async function submitOnlineScore(userId: string, points: number): Promise
 
   const { data: stats } = await supabase
     .from('stats')
-    .select('total_points, games_played')
+    .select('total_points, versus_points, games_played')
     .eq('uid', userId)
     .maybeSingle();
 
   const updates = {
     uid: userId,
     total_points: (stats?.total_points || 0) + points,
+    versus_points: (stats?.versus_points || 0) + points,
     games_played: (stats?.games_played || 0) + 1,
     last_played_at: new Date().toISOString()
   };
@@ -742,16 +746,20 @@ export async function submitOnlineScore(userId: string, points: number): Promise
   await supabase.from('stats').upsert([updates]);
 }
 
-// Get global ranking (ordered by total points or best time)
-export async function getGlobalRanking(limit: number = 20): Promise<any[]> {
+// Get global ranking (ordered by solo points or versus points)
+export async function getGlobalRanking(mode: 'solo' | 'versus' = 'solo', limit: number = 20): Promise<any[]> {
   const isDBActive = await checkTableExistence();
   if (!isDBActive) return [];
+
+  const orderField = mode === 'solo' ? 'solo_points' : 'versus_points';
 
   const { data, error } = await supabase
     .from('stats')
     .select(`
       uid,
       total_points,
+      solo_points,
+      versus_points,
       best_time_easy,
       games_played,
       profiles:uid (
@@ -759,7 +767,7 @@ export async function getGlobalRanking(limit: number = 20): Promise<any[]> {
         avatar_url
       )
     `)
-    .order('total_points', { ascending: false })
+    .order(orderField, { ascending: false })
     .limit(limit);
 
   if (error || !data) return [];
@@ -769,6 +777,8 @@ export async function getGlobalRanking(limit: number = 20): Promise<any[]> {
     username: item.profiles?.username || 'Anônimo',
     avatarUrl: item.profiles?.avatar_url,
     totalPoints: item.total_points,
+    soloPoints: item.solo_points || 0,
+    versusPoints: item.versus_points || 0,
     bestTimeEasy: item.best_time_easy,
     gamesPlayed: item.games_played
   }));

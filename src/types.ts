@@ -38,6 +38,8 @@ export interface UserStats {
   bestTimeHard?: number;
   bestTimeExtreme?: number;
   totalPoints: number;
+  soloPoints: number;
+  versusPoints: number;
   achievements: string[]; // IDs of unlocked achievements
   lastPlayedAt: string;
 }
@@ -47,6 +49,8 @@ export interface RankingEntry {
   username: string;
   avatarUrl?: string;
   totalPoints: number;
+  soloPoints: number;
+  versusPoints: number;
   bestTimeEasy?: number;
   gamesPlayed: number;
 }

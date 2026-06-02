@@ -12,15 +12,18 @@ interface RankingProps {
   ranking: LocalRanking;
   globalRanking: RankingEntry[];
   loadingGlobal: boolean;
+  mode: 'solo' | 'versus';
+  onModeChange: (mode: 'solo' | 'versus') => void;
   onClear: () => void;
   onBack: () => void;
 }
 
-export function Ranking({ ranking, globalRanking, loadingGlobal, onClear, onBack }: RankingProps) {
+export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeChange, onClear, onBack }: RankingProps) {
   const [tab, setTab] = useState<'global' | 'local'>('global');
 
-  const podium = globalRanking.slice(0, 3);
-  const remaining = globalRanking.slice(3);
+  const filteredRanking = globalRanking; // Already filtered/ordered by API
+  const podium = filteredRanking.slice(0, 3);
+  const remaining = filteredRanking.slice(3);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] p-4 text-white">
@@ -38,26 +41,44 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, onClear, onBack
             <p className="text-blue-400 font-medium uppercase tracking-widest text-xs">Os melhores mestres da memória</p>
           </div>
           
-          <div className="flex bg-blue-950/80 p-1.5 rounded-2xl border border-blue-800 shadow-2xl backdrop-blur-xl">
-            <button 
-              onClick={() => setTab('global')}
-              className={`px-6 py-2.5 rounded-xl font-black text-sm transition-all flex items-center gap-2 ${tab === 'global' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-400 hover:text-white'}`}
-            >
-              <Globe className="w-4 h-4" /> GLOBAL
-            </button>
-            <button 
-              onClick={() => setTab('local')}
-              className={`px-6 py-2.5 rounded-xl font-black text-sm transition-all flex items-center gap-2 ${tab === 'local' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-400 hover:text-white'}`}
-            >
-              <Users className="w-4 h-4" /> LOCAL
-            </button>
+          <div className="flex flex-col items-end gap-3">
+            <p className="text-[10px] text-blue-500 font-black uppercase tracking-tighter mr-2">MODO DE RANKING</p>
+            <div className="flex bg-blue-900/40 p-1.5 rounded-2xl border border-blue-800 shadow-2xl backdrop-blur-xl">
+              <button 
+                onClick={() => onModeChange('solo')}
+                className={`px-6 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-2 ${mode === 'solo' ? 'bg-green-600 text-white shadow-lg shadow-green-600/20' : 'text-blue-400 hover:text-white'}`}
+              >
+                <User className="w-4 h-4" /> SOLO ONLINE
+              </button>
+              <button 
+                onClick={() => onModeChange('versus')}
+                className={`px-6 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-2 ${mode === 'versus' ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20' : 'text-blue-400 hover:text-white'}`}
+              >
+                <Swords className="w-4 h-4" /> VERSUS ONLINE
+              </button>
+            </div>
+
+            <div className="flex bg-blue-950/80 p-1.5 rounded-2xl border border-blue-800 shadow-2xl backdrop-blur-xl">
+              <button 
+                onClick={() => setTab('global')}
+                className={`px-6 py-2.5 rounded-xl font-black text-sm transition-all flex items-center gap-2 ${tab === 'global' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-400 hover:text-white'}`}
+              >
+                <Globe className="w-4 h-4" /> GLOBAL
+              </button>
+              <button 
+                onClick={() => setTab('local')}
+                className={`px-6 py-2.5 rounded-xl font-black text-sm transition-all flex items-center gap-2 ${tab === 'local' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-400 hover:text-white'}`}
+              >
+                <Users className="w-4 h-4" /> LOCAL
+              </button>
+            </div>
           </div>
         </div>
 
         <AnimatePresence mode="wait">
           {tab === 'global' ? (
             <motion.div
-              key="global"
+              key={`global-${mode}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -68,7 +89,7 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, onClear, onBack
                   <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
                   <p className="text-blue-400 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando Ranking...</p>
                 </div>
-              ) : globalRanking.length > 0 ? (
+              ) : filteredRanking.length > 0 ? (
                 <>
                   {/* Podium */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
@@ -84,7 +105,7 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, onClear, onBack
                           </div>
                           <div className="bg-slate-400/10 border border-slate-400/20 p-6 rounded-[2rem] w-full text-center">
                             <h3 className="font-black text-xl mb-1 truncate px-2">{podium[1].username}</h3>
-                            <p className="text-slate-400 font-black text-2xl">{podium[1].totalPoints}</p>
+                            <p className="text-slate-400 font-black text-2xl">{mode === 'solo' ? podium[1].soloPoints : podium[1].versusPoints}</p>
                             <p className="text-[10px] uppercase font-bold text-slate-500 tracking-widest mt-1">Pontos</p>
                           </div>
                         </div>
@@ -104,7 +125,7 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, onClear, onBack
                           </div>
                           <div className="bg-yellow-400/10 border-2 border-yellow-400/30 p-8 rounded-[2.5rem] w-full text-center scale-110">
                             <h3 className="font-black text-2xl mb-1 truncate px-2 text-yellow-400">{podium[0].username}</h3>
-                            <p className="text-yellow-400 font-black text-4xl">{podium[0].totalPoints}</p>
+                            <p className="text-yellow-400 font-black text-4xl">{mode === 'solo' ? podium[0].soloPoints : podium[0].versusPoints}</p>
                             <p className="text-[10px] uppercase font-bold text-yellow-500/60 tracking-widest mt-1">Pontos Mundiais</p>
                           </div>
                         </div>
@@ -123,7 +144,7 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, onClear, onBack
                           </div>
                           <div className="bg-orange-600/10 border border-orange-600/20 p-6 rounded-[2rem] w-full text-center">
                             <h3 className="font-black text-xl mb-1 truncate px-2">{podium[2].username}</h3>
-                            <p className="text-orange-600 font-black text-2xl">{podium[2].totalPoints}</p>
+                            <p className="text-orange-600 font-black text-2xl">{mode === 'solo' ? podium[2].soloPoints : podium[2].versusPoints}</p>
                             <p className="text-[10px] uppercase font-bold text-orange-600/50 tracking-widest mt-1">Pontos</p>
                           </div>
                         </div>
@@ -149,8 +170,10 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, onClear, onBack
                               <span className="font-bold text-lg">{entry.username}</span>
                             </div>
                             <div className="text-right">
-                              <span className="font-black text-xl text-blue-200">{entry.totalPoints}</span>
-                              <span className="block text-[8px] uppercase tracking-widest text-blue-500 font-bold">Total Pts</span>
+                              <span className="font-black text-xl text-blue-200">{mode === 'solo' ? entry.soloPoints : entry.versusPoints}</span>
+                              <span className="block text-[8px] uppercase tracking-widest text-blue-500 font-bold">
+                                {mode === 'solo' ? 'Recorde Solo' : 'Pontos Versus'}
+                              </span>
                             </div>
                           </div>
                         ))}
@@ -161,7 +184,7 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, onClear, onBack
               ) : (
                 <div className="text-center py-24 bg-blue-950/20 rounded-[3rem] border-2 border-dashed border-blue-800">
                   <p className="text-blue-400 font-black text-xl mb-2">O Ranking está vazio!</p>
-                  <p className="text-blue-500 text-sm">Seja o primeiro a jogar online e dominar o topo.</p>
+                  <p className="text-blue-500 text-sm">Seja o primeiro a jogar e dominar o topo em modo {mode}!</p>
                 </div>
               )}
             </motion.div>

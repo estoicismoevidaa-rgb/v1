@@ -27,6 +27,8 @@ import { UserProfile, UserStats, RankingEntry, Difficulty } from '../types.ts';
  *   best_time_hard int,
  *   best_time_extreme int,
  *   total_points int default 0,
+ *   solo_points int default 0,
+ *   versus_points int default 0,
  *   achievements text[] default '{}',
  *   last_played_at timestamp with time zone default timezone('utc'::text, now())
  * );
@@ -237,6 +239,8 @@ export async function getRanking(): Promise<RankingEntry[]> {
       .select(`
         uid,
         total_points,
+        solo_points,
+        versus_points,
         games_played,
         best_time_easy,
         profiles (
@@ -254,6 +258,8 @@ export async function getRanking(): Promise<RankingEntry[]> {
       username: row.profiles?.username || 'Anônimo',
       avatarUrl: row.profiles?.avatar_url,
       totalPoints: row.total_points,
+      soloPoints: row.solo_points || 0,
+      versusPoints: row.versus_points || 0,
       bestTimeEasy: row.best_time_easy,
       gamesPlayed: row.games_played
     }));

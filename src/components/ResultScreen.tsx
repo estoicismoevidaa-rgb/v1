@@ -7,13 +7,14 @@ import { motion } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { useEffect } from 'react';
 import { Trophy, RotateCcw, Home, List, Star, Flame, MinusCircle, PlusCircle } from 'lucide-react';
-import { Player } from '../types.ts';
-import { calculateOnlineRankingPoints } from '../lib/game-logic.ts';
+import { Player, Difficulty } from '../types.ts';
+import { calculateOnlineRankingPoints, calculateSoloRankingPoints, DIFFICULTY_CONFIG } from '../lib/game-logic.ts';
 import { audioController } from '../lib/audio.ts';
 
 interface ResultScreenProps {
   mode: 'solo' | 'local' | 'online';
   players: Player[];
+  difficulty: Difficulty;
   time?: number;
   attempts?: number;
   onRestart: () => void;
@@ -21,7 +22,7 @@ interface ResultScreenProps {
   onChangeDifficulty: () => void;
 }
 
-export function ResultScreen({ mode, players, time, attempts, onRestart, onMenu, onChangeDifficulty }: ResultScreenProps) {
+export function ResultScreen({ mode, players, difficulty, time, attempts, onRestart, onMenu, onChangeDifficulty }: ResultScreenProps) {
   useEffect(() => {
     // Play victory sound with a small delay for better reliability
     const playTimer = setTimeout(() => {
@@ -73,18 +74,40 @@ export function ResultScreen({ mode, players, time, attempts, onRestart, onMenu,
         <h2 className="text-4xl font-bold mb-2">Fim de Jogo!</h2>
         
         {mode === 'solo' ? (
-          <div className="space-y-4 my-8">
-            <div className="flex justify-around bg-blue-950/50 p-4 rounded-2xl">
-              <div>
-                <p className="text-blue-300 text-sm">Tempo</p>
-                <p className="text-2xl font-bold">{time}s</p>
+          <div className="space-y-6 my-8">
+            <div className="flex justify-around bg-blue-950/50 p-6 rounded-3xl border border-blue-800">
+              <div className="text-center">
+                <p className="text-blue-400 text-[10px] uppercase font-black tracking-widest mb-1">Tempo</p>
+                <p className="text-3xl font-black text-white">{time}s</p>
               </div>
-              <div className="w-px bg-blue-700" />
-              <div>
-                <p className="text-blue-300 text-sm">Tentativas</p>
-                <p className="text-2xl font-bold">{attempts}</p>
+              <div className="w-px bg-blue-800" />
+              <div className="text-center">
+                <p className="text-blue-400 text-[10px] uppercase font-black tracking-widest mb-1">Tentativas</p>
+                <p className="text-3xl font-black text-white">{attempts}</p>
               </div>
             </div>
+
+            {(() => {
+              const errors = (attempts || 0) - DIFFICULTY_CONFIG[difficulty].pairs;
+              const soloResult = calculateSoloRankingPoints(difficulty, time || 0, Math.max(0, errors));
+              return (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="bg-green-600/20 border-2 border-green-500 rounded-[2.5rem] p-8 mt-4 shadow-2xl relative overflow-hidden"
+                >
+                  <PlusCircle className="absolute -right-4 -top-4 w-24 h-24 text-green-500/10" />
+                  <p className="text-green-400 font-bold uppercase tracking-widest text-xs mb-2">Pontuação Conquistada</p>
+                  <h3 className="text-6xl font-black text-white mb-2">{soloResult.totalPoints}</h3>
+                  <div className="flex justify-center gap-4 text-[10px] text-blue-300/60 font-medium font-mono">
+                    <span>Base: {soloResult.basePoints}</span>
+                    <span>•</span>
+                    <span>Mult: x{soloResult.difficultyMultiplier}</span>
+                  </div>
+                </motion.div>
+              );
+            })()}
           </div>
         ) : (
           <div className="my-8 text-left space-y-6">

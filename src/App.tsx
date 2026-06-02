@@ -28,7 +28,13 @@ import {
   LocalRanking, 
   GameSettings 
 } from './types.ts';
-import { generateCards, DIFFICULTY_CONFIG, calculateOnlineRankingPoints, OnlineScoreBreakdown } from './lib/game-logic.ts';
+import { 
+  generateCards, 
+  DIFFICULTY_CONFIG, 
+  calculateOnlineRankingPoints, 
+  calculateSoloRankingPoints,
+  OnlineScoreBreakdown 
+} from './lib/game-logic.ts';
 import { audioController } from './lib/audio.ts';
 
 // Components
@@ -93,6 +99,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : { solo: [], multiplayer: [] };
   });
   const [globalRanking, setGlobalRanking] = useState<any[]>([]);
+  const [rankingMode, setRankingMode] = useState<'solo' | 'versus'>('solo');
   const [loadingGlobal, setLoadingGlobal] = useState(false);
 
   // Refs
@@ -506,15 +513,15 @@ export default function App() {
           if (allMatched) {
             setGameStatus('finished');
             
-            const points = difficulty === 'Fácil' ? 10 :
-                           difficulty === 'Médio' ? 25 :
-                           difficulty === 'Difícil' ? 50 : 100;
-
             if (mode === 'solo') {
+              const errors = attempts + 1 - DIFFICULTY_CONFIG[difficulty].pairs;
+              const soloResult = calculateSoloRankingPoints(difficulty, time, errors);
+              const points = soloResult.totalPoints;
+
               updateSoloRanking(time, attempts + 1);
               if (currentUserId) {
                 if (isOnlineSolo) {
-                  submitSoloTime(currentUserId, userProfile?.username || 'Anônimo', difficulty, time);
+                  submitSoloTime(currentUserId, userProfile?.username || 'Anônimo', difficulty, time, errors);
                 }
                 updateUserStats(currentUserId, difficulty, time, points);
               }
@@ -632,12 +639,12 @@ export default function App() {
   useEffect(() => {
     if (screen === 'ranking' || screen === 'lobby') {
       setLoadingGlobal(true);
-      getGlobalRanking().then(res => {
+      getGlobalRanking(rankingMode).then(res => {
         setGlobalRanking(res);
         setLoadingGlobal(false);
       }).catch(() => setLoadingGlobal(false));
     }
-  }, [screen]);
+  }, [screen, rankingMode]);
 
   // Rendering
   const renderHUD = () => {
@@ -774,6 +781,7 @@ export default function App() {
             <ResultScreen 
               mode={mode}
               players={players}
+              difficulty={difficulty}
               time={time}
               attempts={attempts}
               onRestart={restartGame}
@@ -814,6 +822,8 @@ export default function App() {
             ranking={ranking} 
             globalRanking={globalRanking}
             loadingGlobal={loadingGlobal}
+            mode={rankingMode}
+            onModeChange={setRankingMode}
             onClear={clearRanking} 
             onBack={() => setScreen('home')} 
           />

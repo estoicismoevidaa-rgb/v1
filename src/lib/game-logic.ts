@@ -49,6 +49,44 @@ export interface OnlineScoreBreakdown {
   totalPoints: number;
 }
 
+export interface SoloScoreBreakdown {
+  basePoints: number;
+  timeBonus: number;
+  errorPenalty: number;
+  difficultyMultiplier: number;
+  totalPoints: number;
+}
+
+export function calculateSoloRankingPoints(
+  difficulty: Difficulty,
+  timeInSeconds: number,
+  errors: number
+): SoloScoreBreakdown {
+  const configs: Record<Difficulty, { base: number, timeFactor: number, errorFactor: number, multiplier: number }> = {
+    'Fácil': { base: 1000, timeFactor: 5, errorFactor: 10, multiplier: 1 },
+    'Médio': { base: 2500, timeFactor: 5, errorFactor: 15, multiplier: 1.5 },
+    'Difícil': { base: 5000, timeFactor: 5, errorFactor: 20, multiplier: 2 },
+    'Extremo': { base: 10000, timeFactor: 5, errorFactor: 25, multiplier: 3 }
+  };
+
+  const config = configs[difficulty];
+  
+  // Scoring formula: Base - (time penalty) - (error penalty)
+  // We multiply at the end to reward harder difficulties more
+  const rawPoints = config.base - (timeInSeconds * config.timeFactor) - (errors * config.errorFactor);
+  
+  // Ensure we don't go below a minimum participation score
+  const totalPoints = Math.max(50, Math.floor(rawPoints * config.multiplier));
+
+  return {
+    basePoints: config.base,
+    timeBonus: -(timeInSeconds * config.timeFactor),
+    errorPenalty: -(errors * config.errorFactor),
+    difficultyMultiplier: config.multiplier,
+    totalPoints
+  };
+}
+
 export function calculateOnlineRankingPoints(
   rank: number, 
   roomSize: number, 
