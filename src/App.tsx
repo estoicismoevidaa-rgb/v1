@@ -106,7 +106,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : { solo: [], multiplayer: [] };
   });
   const [globalRanking, setGlobalRanking] = useState<any[]>([]);
-  const [rankingMode, setRankingMode] = useState<'solo' | 'versus'>('solo');
+  const [rankingMode, setRankingMode] = useState<'solo' | 'versus' | 'total'>('total');
   const [loadingGlobal, setLoadingGlobal] = useState(false);
 
   // Refs

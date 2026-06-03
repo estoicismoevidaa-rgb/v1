@@ -732,12 +732,12 @@ export async function submitOnlineScore(userId: string, points: number, username
   await supabase.from('stats').upsert([updates]);
 }
 
-// Get global ranking (ordered by solo points or versus points)
-export async function getGlobalRanking(mode: 'solo' | 'versus' = 'solo', limit: number = 50): Promise<any[]> {
+// Get global ranking (ordered by solo points, versus points or total points)
+export async function getGlobalRanking(mode: 'solo' | 'versus' | 'total' = 'solo', limit: number = 50): Promise<any[]> {
   const isDBActive = await checkTableExistence();
   if (!isDBActive) return [];
 
-  const orderField = mode === 'solo' ? 'solo_points' : 'versus_points';
+  const orderField = mode === 'solo' ? 'solo_points' : mode === 'versus' ? 'versus_points' : 'total_points';
 
   const { data, error } = await supabase
     .from('stats')
