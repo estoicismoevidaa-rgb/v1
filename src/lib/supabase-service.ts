@@ -664,12 +664,13 @@ export async function submitSoloTime(userId: string, username: string, difficult
   const isDBActive = await checkTableExistence();
   if (!isDBActive) return;
 
-  // 1. Ensure profile exists (update username if needed)
-  await supabase.from('profiles').upsert([{ 
-    uid: userId, 
-    username: username,
-    updated_at: new Date().toISOString()
-  }], { onConflict: 'uid' });
+  // 1. Ensure profile exists
+  const { data: profile } = await supabase.from('profiles').select('uid').eq('uid', userId).maybeSingle();
+  if (profile) {
+    await supabase.from('profiles').update({ username, updated_at: new Date().toISOString() }).eq('uid', userId);
+  } else {
+    await supabase.from('profiles').insert([{ uid: userId, username, updated_at: new Date().toISOString() }]);
+  }
 
   // 2. Fetch current stats
   const { data: stats } = await supabase
@@ -699,8 +700,15 @@ export async function submitSoloTime(userId: string, username: string, difficult
     updates[timeField] = time;
   }
 
-  const { error } = await supabase.from('stats').upsert(updates, { onConflict: 'uid' });
-  if (error) console.error('Error in submitSoloTime:', error);
+  if (stats && stats.uid) {
+    const { error } = await supabase.from('stats').update(updates).eq('uid', userId);
+    if (error) console.error('Error in submitSoloTime update:', error);
+  } else {
+    // Need to ensure uid is present
+    updates.uid = userId;
+    const { error } = await supabase.from('stats').insert([updates]);
+    if (error) console.error('Error in submitSoloTime insert:', error);
+  }
 }
 
 // Submit online points to global ranking
@@ -708,12 +716,13 @@ export async function submitOnlineScore(userId: string, points: number, username
   const isDBActive = await checkTableExistence();
   if (!isDBActive) return;
 
-  // 1. Ensure profile exists to satisfy foreign key constraint
-  await supabase.from('profiles').upsert([{ 
-    uid: userId, 
-    username: username,
-    updated_at: new Date().toISOString()
-  }], { onConflict: 'uid' });
+  // 1. Ensure profile exists
+  const { data: profile } = await supabase.from('profiles').select('uid').eq('uid', userId).maybeSingle();
+  if (profile) {
+    await supabase.from('profiles').update({ username, updated_at: new Date().toISOString() }).eq('uid', userId);
+  } else {
+    await supabase.from('profiles').insert([{ uid: userId, username, updated_at: new Date().toISOString() }]);
+  }
 
   const { data: stats } = await supabase
     .from('stats')
@@ -735,8 +744,14 @@ export async function submitOnlineScore(userId: string, points: number, username
     updates.versus_points = (stats?.versus_points || 0) + points;
   }
 
-  const { error } = await supabase.from('stats').upsert(updates, { onConflict: 'uid' });
-  if (error) console.error('Error in submitOnlineScore:', error);
+  if (stats && stats.uid) {
+    const { error } = await supabase.from('stats').update(updates).eq('uid', userId);
+    if (error) console.error('Error in submitOnlineScore update:', error);
+  } else {
+    updates.uid = userId;
+    const { error } = await supabase.from('stats').insert([updates]);
+    if (error) console.error('Error in submitOnlineScore insert:', error);
+  }
 }
 
 // Get global ranking (ordered by solo points, versus points or total points)

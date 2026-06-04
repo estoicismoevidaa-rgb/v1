@@ -229,8 +229,17 @@ export async function updateUserStats(
       updates[diffKey] = timeInSeconds;
     }
 
-    const { error: upsertError } = await supabase.from('stats').upsert(updates, { onConflict: 'uid' });
-    if (upsertError) throw upsertError;
+    let dbError = null;
+    if (currentStats && currentStats.uid) {
+      const { error } = await supabase.from('stats').update(updates).eq('uid', uid);
+      dbError = error;
+    } else {
+      updates.uid = uid;
+      const { error } = await supabase.from('stats').insert([updates]);
+      dbError = error;
+    }
+    
+    if (dbError) throw dbError;
     
     // Also save locally for quick access
     localStorage.setItem(`stats_${uid}`, JSON.stringify(updates));
