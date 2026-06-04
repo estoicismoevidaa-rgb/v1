@@ -43,6 +43,12 @@ export interface UserStats {
   versusPoints: number;
   achievements: string[]; // IDs of unlocked achievements
   lastPlayedAt: string;
+  level: number;
+  currentXp: number;
+  totalXp: number;
+  nextLevelXp: number;
+  gamesWon: number;
+  gamesLost: number;
 }
 
 export interface RankingEntry {

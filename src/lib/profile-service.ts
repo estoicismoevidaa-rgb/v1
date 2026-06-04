@@ -138,6 +138,12 @@ export async function registerProfile(username: string, email: string, password:
         uid: authData.user.id,
         games_played: 0,
         total_points: 0,
+        level: 1,
+        current_xp: 0,
+        total_xp: 0,
+        next_level_xp: 100,
+        games_won: 0,
+        games_lost: 0,
         last_played_at: new Date().toISOString()
       }]);
     }

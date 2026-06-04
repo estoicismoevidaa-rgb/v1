@@ -18,7 +18,9 @@ import {
   Loader2, 
   Check 
 } from 'lucide-react';
-import { GameSettings, UserProfile } from '../types.ts';
+import { GameSettings, UserProfile, UserStats } from '../types.ts';
+import { supabase } from '../lib/supabase.ts';
+import { XPProgress } from './XPProgress.tsx';
 
 interface SettingsProps {
   settings: GameSettings;
@@ -41,6 +43,7 @@ export function Settings({
   const [avatarPreview, setAvatarPreview] = useState(userProfile?.avatarUrl || '');
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [stats, setStats] = useState<UserStats | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -48,6 +51,28 @@ export function Settings({
     if (userProfile) {
       setUsername(userProfile.username);
       setAvatarPreview(userProfile.avatarUrl || '');
+      
+      if (!userProfile.isGuest) {
+        supabase.from('stats').select('*').eq('uid', userProfile.uid).maybeSingle().then(({ data }) => {
+          if (data) {
+            setStats({
+              uid: data.uid,
+              gamesPlayed: data.games_played,
+              totalPoints: data.total_points,
+              soloPoints: data.solo_points,
+              versusPoints: data.versus_points,
+              achievements: data.achievements,
+              lastPlayedAt: data.last_played_at,
+              level: data.level || 1,
+              currentXp: data.current_xp || 0,
+              totalXp: data.total_xp || 0,
+              nextLevelXp: data.next_level_xp || 100,
+              gamesWon: data.games_won || 0,
+              gamesLost: data.games_lost || 0,
+            });
+          }
+        });
+      }
     }
   }, [userProfile]);
 
@@ -147,6 +172,26 @@ export function Settings({
           <h3 className="text-xl font-bold mb-5 flex items-center gap-2 text-green-400">
             <User className="w-5 h-5" /> Editar Perfil
           </h3>
+          
+          {stats && !userProfile?.isGuest && (
+            <div className="mb-6">
+              <XPProgress 
+                level={stats.level} 
+                currentXp={stats.currentXp} 
+                nextLevelXp={stats.nextLevelXp} 
+              />
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <div className="bg-blue-900/40 p-2 rounded-lg text-center border border-blue-800/50">
+                  <div className="text-[10px] text-blue-400 uppercase font-black">Vitórias</div>
+                  <div className="text-sm font-bold text-green-400">{stats.gamesWon}</div>
+                </div>
+                <div className="bg-blue-900/40 p-2 rounded-lg text-center border border-blue-800/50">
+                  <div className="text-[10px] text-blue-400 uppercase font-black">Derrotas</div>
+                  <div className="text-sm font-bold text-red-400">{stats.gamesLost}</div>
+                </div>
+              </div>
+            </div>
+          )}
           
           <form onSubmit={handleProfileSubmit} className="space-y-4">
             {/* Avatar Input */}

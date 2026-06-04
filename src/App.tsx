@@ -36,6 +36,12 @@ import {
   OnlineScoreBreakdown 
 } from './lib/game-logic.ts';
 import { audioController } from './lib/audio.ts';
+import { 
+  adicionarXP, 
+  calcularXPSolo, 
+  calcularXPMultiplayer, 
+  podeGanharXP 
+} from './lib/xp-service.ts';
 
 // Components
 import { Home } from './components/Home.tsx';
@@ -108,6 +114,7 @@ export default function App() {
   const [globalRanking, setGlobalRanking] = useState<any[]>([]);
   const [rankingMode, setRankingMode] = useState<'solo' | 'versus' | 'total'>('total');
   const [loadingGlobal, setLoadingGlobal] = useState(false);
+  const [levelUpData, setLevelUpData] = useState<any | null>(null);
 
   // Refs
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -479,9 +486,35 @@ export default function App() {
         const breakdown = calculateOnlineRankingPoints(rank, players.length, myPlayer.score, myPlayer.maxCombo);
         const isSolo = players.length === 1;
         submitOnlineScore(currentUserId, breakdown.totalPoints, myPlayer.name, isSolo).catch(console.error);
+
+        // Calculate and add XP
+        if (!currentUserId.startsWith('local')) {
+          const pares = Math.floor(myPlayer.score / (rankingMode === 'total' ? 10 : 100)); // Approximation of pairs found
+          // Ensure we don't have 0 pairs if score is something weird, since they must have participated
+          const safePares = myPlayer.score > 0 ? Math.max(1, pares) : 0;
+          
+          if (podeGanharXP({
+            partidaFinalizada: true,
+            participouAteFinal: true,
+            paresEncontrados: safePares,
+            tempoEmSegundos: time
+          })) {
+            const xpGanho = calcularXPMultiplayer({
+              pontuacaoIndividual: myPlayer.score,
+              posicaoFinal: rank,
+              totalJogadores: players.length,
+              paresEncontrados: safePares,
+              comboMaximo: myPlayer.maxCombo || 0,
+              participouAteFinal: true
+            });
+            adicionarXP(currentUserId, xpGanho, myPlayer.score, 'multiplayer_online', rank === 1).then(res => {
+              if (res) setLevelUpData(res);
+            }).catch(console.error);
+          }
+        }
       }
     }
-  }, [gameStatus, scoreSubmitted, mode, currentUserId, players]);
+  }, [gameStatus, scoreSubmitted, mode, currentUserId, players, time, rankingMode]);
 
   // Turn management
   const nextTurn = useCallback(() => {
@@ -568,6 +601,26 @@ export default function App() {
                 } else {
                   // For normal solo (not online ranking), just update generic stats
                   updateUserStats(currentUserId, difficulty, time, points, 'solo');
+                }
+                
+                // Add XP Logic for both online and offline solo
+                const xpCanEarn = podeGanharXP({
+                  partidaFinalizada: true,
+                  participouAteFinal: true,
+                  paresEncontrados: DIFFICULTY_CONFIG[difficulty].pairs,
+                  tempoEmSegundos: time
+                });
+                if (xpCanEarn && !currentUserId.startsWith('local')) {
+                  const xpGanho = calcularXPSolo({
+                    pontuacaoFinal: points,
+                    venceu: true,
+                    tempoEmSegundos: time,
+                    erros: errors,
+                    comboMaximo: players[0]?.maxCombo || 0
+                  });
+                  adicionarXP(currentUserId, xpGanho, points, isOnlineSolo ? 'solo_online' : 'solo_local', true).then(res => {
+                    if (res) setLevelUpData(res);
+                  }).catch(console.error);
                 }
               }
             } else if (mode === 'local') {
@@ -827,8 +880,13 @@ export default function App() {
               difficulty={difficulty}
               time={time}
               attempts={attempts}
-              onRestart={restartGame}
+              levelUpData={levelUpData}
+              onRestart={() => {
+                setLevelUpData(null);
+                restartGame();
+              }}
               onMenu={() => { 
+                setLevelUpData(null);
                 if (mode === 'online') {
                   handleOnlineLeave();
                 } else {
@@ -836,7 +894,10 @@ export default function App() {
                   setGameStatus('waiting'); 
                 }
               }}
-              onChangeDifficulty={() => setScreen(`${mode}-config`)}
+              onChangeDifficulty={() => {
+                setLevelUpData(null);
+                setScreen(`${mode}-config`);
+              }}
             />
           ) : (
             <>

@@ -10,6 +10,7 @@ import { Trophy, RotateCcw, Home, List, Star, Flame, MinusCircle, PlusCircle } f
 import { Player, Difficulty } from '../types.ts';
 import { calculateOnlineRankingPoints, calculateSoloRankingPoints, DIFFICULTY_CONFIG } from '../lib/game-logic.ts';
 import { audioController } from '../lib/audio.ts';
+import { XPProgress } from './XPProgress.tsx';
 
 interface ResultScreenProps {
   mode: 'solo' | 'local' | 'online';
@@ -17,12 +18,13 @@ interface ResultScreenProps {
   difficulty: Difficulty;
   time?: number;
   attempts?: number;
+  levelUpData?: any;
   onRestart: () => void;
   onMenu: () => void;
   onChangeDifficulty: () => void;
 }
 
-export function ResultScreen({ mode, players, difficulty, time, attempts, onRestart, onMenu, onChangeDifficulty }: ResultScreenProps) {
+export function ResultScreen({ mode, players, difficulty, time, attempts, levelUpData, onRestart, onMenu, onChangeDifficulty }: ResultScreenProps) {
   useEffect(() => {
     // Play victory sound with a small delay for better reliability
     const playTimer = setTimeout(() => {
@@ -188,6 +190,16 @@ export function ResultScreen({ mode, players, difficulty, time, attempts, onRest
               })}
             </div>
           </div>
+        )}
+
+        {levelUpData && (
+          <XPProgress 
+            level={levelUpData.level} 
+            currentXp={levelUpData.xpAtual} 
+            nextLevelXp={levelUpData.xpParaProximoLevel} 
+            leveledUp={levelUpData.leveledUp} 
+            xpGanho={levelUpData.xpGanho} 
+          />
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-8">
