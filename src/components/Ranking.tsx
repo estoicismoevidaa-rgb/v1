@@ -5,7 +5,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, Trash2, Clock, Swords, Globe, Trophy, User, Medal, Crown } from 'lucide-react';
+import { ChevronLeft, Trash2, Clock, Swords, Globe, Trophy, User, Medal, Crown, Award, Star } from 'lucide-react';
 import { LocalRanking, RankingEntry } from '../types.ts';
 
 interface RankingProps {
@@ -19,24 +19,131 @@ interface RankingProps {
   onBack: () => void;
 }
 
-const ShieldSvg = ({ color, rank }: { color: string, rank: number }) => {
-  const isGold = rank === 1;
+const TechCorner = ({ className }: { className: string }) => (
+  <div className={`absolute w-4 h-4 border-white/20 pointer-events-none ${className}`} />
+);
+
+const Particle = ({ delay = 0 }: { delay?: number }) => (
+  <motion.div
+    initial={{ y: '100%', x: Math.random() * 100 + '%', opacity: 0 }}
+    animate={{ y: '-10%', opacity: [0, 1, 0] }}
+    transition={{ duration: 5 + Math.random() * 5, repeat: Infinity, delay, ease: 'linear' }}
+    className="absolute w-1 h-1 bg-blue-400 rounded-full blur-[1px] pointer-events-none"
+  />
+);
+
+const Laurels = ({ className }: { className: string }) => (
+  <svg viewBox="0 0 100 80" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <path d="M30 70 Q 10 50 30 20" />
+    <path d="M35 65 Q 20 50 35 30" />
+    <path d="M40 60 Q 30 50 40 40" />
+  </svg>
+);
+
+const FilterButton = ({ active, onClick, icon, label, glowColor = 'blue' }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string, glowColor?: string }) => (
+  <button
+    onClick={onClick}
+    className={`relative flex items-center justify-center gap-2 py-3 rounded-2xl transition-all duration-300 font-black text-[11px] uppercase tracking-widest flex-1 group ${
+      active ? 'text-white' : 'text-blue-400/40 hover:text-blue-400/60'
+    }`}
+  >
+    {active && (
+      <motion.div 
+        layoutId={`filter-${glowColor}`}
+        className={`absolute inset-0 rounded-2xl border-2 shadow-[0_0_20px_rgba(59,130,246,0.3)] ${
+          glowColor === 'blue' ? 'bg-blue-600 border-blue-400 shadow-blue-500/50' : 'bg-blue-700/40 border-blue-400/60'
+        }`}
+      />
+    )}
+    <div className="relative z-10 flex items-center gap-2">
+      {icon}
+      <span>{label}</span>
+    </div>
+  </button>
+);
+
+const PodiumCard = ({ entry, rank, mode }: { entry: RankingEntry, rank: 1 | 2 | 3, mode: string }) => {
+  const isFirst = rank === 1;
+  const config = {
+    1: { 
+      color: '#fbbf24', 
+      glow: 'shadow-[0_0_40px_rgba(251,191,36,0.5)]', 
+      border: 'border-yellow-500', 
+      bg: 'bg-yellow-500/10',
+      label: 'Dourado',
+      size: 'scale-110'
+    },
+    2: { 
+      color: '#cbd5e1', 
+      glow: 'shadow-[0_0_30px_rgba(203,213,225,0.3)]', 
+      border: 'border-blue-400/50', 
+      bg: 'bg-blue-900/20',
+      label: 'Prata',
+      size: 'scale-95'
+    },
+    3: { 
+      color: '#d97706', 
+      glow: 'shadow-[0_0_30px_rgba(217,119,6,0.3)]', 
+      border: 'border-orange-500/50', 
+      bg: 'bg-orange-500/10',
+      label: 'Bronze',
+      size: 'scale-90'
+    }
+  }[rank];
+
+  const points = mode === 'solo' ? entry.soloPoints : mode === 'versus' ? entry.versusPoints : entry.totalPoints;
+  const pointsLabel = mode === 'solo' ? 'PONTOS SOLO' : mode === 'versus' ? 'PONTOS VERSUS' : 'PONTOS MUNDIAIS';
+
   return (
-    <svg viewBox="0 0 100 130" className={`w-full h-full drop-shadow-[0_0_20px_${color}44]`}>
-      <path 
-        d="M5 25 L50 5 L95 25 L95 105 L50 125 L5 105 Z" 
-        fill="rgba(0, 10, 30, 0.95)" 
-        stroke={color} 
-        strokeWidth={isGold ? "4" : "3"} 
-      />
-      <path 
-        d="M12 30 L50 15 L88 30 L88 95 L50 115 L12 95 Z" 
-        fill="none" 
-        stroke={color} 
-        strokeWidth="1" 
-        strokeOpacity="0.3" 
-      />
-    </svg>
+    <motion.div 
+      initial={{ y: 50, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ delay: rank * 0.1 }}
+      className={`relative flex flex-col items-center ${config.size} z-${isFirst ? '30' : '20'}`}
+    >
+      {/* Glow Base on Ground */}
+      <div className={`absolute -bottom-4 w-32 h-8 rounded-full blur-2xl opacity-40 ${config.bg.replace('10', '40')}`} />
+      
+      {isFirst && (
+        <div className="mb-[-10px] relative z-40">
+          <Crown className="w-10 h-10 text-yellow-400 drop-shadow-[0_0_15px_#fbbf24]" fill="#fbbf24" strokeWidth={1} />
+        </div>
+      )}
+
+      {/* Main Card Frame */}
+      <div className={`relative px-4 pt-8 pb-6 bg-[#001025]/90 rounded-[2.5rem] border-2 ${config.border} ${config.glow} backdrop-blur-md w-full max-w-[130px] flex flex-col items-center overflow-hidden`}>
+        {/* Subtle Tech Lines */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '100% 10px' }} />
+        
+        {/* Avatar */}
+        <div className={`relative mb-3 group`}>
+          <div className={`w-20 h-20 rounded-full border-2 ${config.border} p-1 shadow-inner relative z-10`}>
+            <div className="w-full h-full rounded-full overflow-hidden bg-slate-900 border border-white/10">
+               {entry.avatarUrl ? (
+                 <img src={entry.avatarUrl} alt={entry.username} className="w-full h-full object-cover" />
+               ) : (
+                 <User className={`w-10 h-10 mx-auto mt-4 ${isFirst ? 'text-yellow-500' : 'text-blue-400/50'}`} />
+               )}
+            </div>
+          </div>
+          {/* Position Seal */}
+          <div className={`absolute -bottom-2 -right-1 w-8 h-8 rounded-full border-2 border-white flex items-center justify-center font-black text-sm z-20 shadow-xl ${isFirst ? 'bg-yellow-500 text-black' : 'bg-slate-800 text-white'}`}>
+            {rank}
+          </div>
+        </div>
+
+        {/* Name & Content */}
+        <h3 className="text-white font-black text-[12px] uppercase tracking-tighter w-full text-center truncate mb-1 px-1 drop-shadow-md">{entry.username}</h3>
+        <div className={`px-2 py-0.5 rounded-full border ${isFirst ? 'border-yellow-500/30 bg-yellow-500/10' : 'border-blue-500/30 bg-blue-500/10'} mb-2`}>
+           <span className={`text-[9px] font-black ${isFirst ? 'text-yellow-400' : 'text-blue-300'}`}>LV {entry.level || 1}</span>
+        </div>
+        
+        <div className="text-center">
+          <p className="text-2xl font-black text-white tracking-tighter drop-shadow-md leading-none">{points?.toLocaleString()}</p>
+          <p className={`text-[7px] font-black uppercase tracking-[0.15em] mt-1.5 ${isFirst ? 'text-yellow-500' : 'text-blue-500'}`}>{pointsLabel}</p>
+        </div>
+      </div>
+    </motion.div>
   );
 };
 
@@ -44,10 +151,9 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, userProfi
   const [tab, setTab] = useState<'global' | 'local'>('global');
 
   const filteredRanking = globalRanking; 
-  const podium = filteredRanking.slice(0, 3);
+  const podium = [filteredRanking[1], filteredRanking[0], filteredRanking[2]]; // Order: 2nd, 1st, 3rd for pódium layout
   const remaining = filteredRanking.slice(3);
 
-  // Find current user's global rank
   const myRankIndex = globalRanking.findIndex(r => r.uid === userProfile?.uid);
   const myRank = myRankIndex !== -1 ? myRankIndex + 1 : '--';
   const myPoints = myRankIndex !== -1 ? 
@@ -55,106 +161,89 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, userProfi
     : 0;
 
   return (
-    <div className="flex flex-col items-center min-h-screen text-white bg-[#000814] relative overflow-hidden pb-32">
+    <div className="flex flex-col items-center min-h-screen text-white bg-[#000814] relative overflow-hidden pb-40">
       {/* Background Decor */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[10%] left-[5%] w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[100px]" />
-        <div className="absolute top-[40%] right-[-10%] w-[350px] h-[350px] bg-blue-400/10 rounded-full blur-[80px]" />
-        <div className="absolute bottom-0 w-full h-[30%] bg-gradient-to-t from-blue-900/10 to-transparent" />
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-[50%] bg-[radial-gradient(circle_at_50%_0%,rgba(30,144,255,0.15)_0%,transparent_70%)]" />
+        <div className="absolute inset-0 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+        <div className="absolute inset-0 opacity-[0.05]" 
+             style={{ backgroundImage: 'linear-gradient(45deg, #3b82f6 1px, transparent 1px), linear-gradient(-45deg, #3b82f6 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+        
+        {/* Animated Particles */}
+        {[...Array(15)].map((_, i) => (
+          <Particle key={i} delay={i * 0.5} />
+        ))}
       </div>
 
+      {/* Top Header */}
       <div className="w-full flex items-center justify-between p-6 relative z-30">
         <button 
           onClick={onBack} 
           className="group"
         >
-          <div className="relative px-5 py-2 flex items-center gap-2 overflow-hidden border border-blue-500/30 rounded-xl bg-blue-950/20 backdrop-blur-md">
+          <div className="relative px-6 py-3 flex items-center gap-2 border-[1.5px] border-blue-500/40 rounded-2xl bg-[#001025]/80 backdrop-blur-md shadow-[0_0_15px_rgba(59,130,246,0.2)] transition-all hover:bg-blue-600/10 active:scale-95">
             <ChevronLeft className="w-5 h-5 text-blue-400 group-hover:-translate-x-1 transition-transform" /> 
-            <span className="text-white font-bold text-xs uppercase tracking-tight">Voltar ao Menu</span>
+            <span className="text-white font-black text-[10px] uppercase tracking-[0.2em] italic">Voltar ao Menu</span>
           </div>
         </button>
       </div>
 
-      <div className="w-full max-w-xl text-center mb-8 relative z-20 px-4">
-        <div className="relative inline-block mb-2">
-           {/* Laurel Wreath Mock */}
-           <div className="absolute -inset-x-12 -inset-y-4 opacity-40">
-             <svg viewBox="0 0 200 100" className="w-full h-full text-blue-400">
-               <path d="M40 80 Q 20 60 40 40 L 50 50 M160 80 Q 180 60 160 40 L 150 50" fill="none" stroke="currentColor" strokeWidth="2" />
-             </svg>
+      {/* Hero Title Container */}
+      <div className="w-full max-w-2xl text-center mb-10 relative z-20 px-4 mt-2">
+        <div className="relative inline-block">
+           {/* Blue Laurels */}
+           <div className="absolute -left-20 top-1/2 -translate-y-1/2 w-16 h-16 text-blue-500 opacity-80 hidden md:block">
+              <Laurels className="w-full h-full rotate-[-15deg]" />
            </div>
-           <h1 className="text-6xl md:text-8xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-blue-100 to-blue-400 drop-shadow-[0_0_20px_rgba(59,130,246,0.6)] leading-none select-none">
-            RANKING
-          </h1>
+           <div className="absolute -right-20 top-1/2 -translate-y-1/2 w-16 h-16 text-blue-500 opacity-80 hidden md:block">
+              <Laurels className="w-full h-full scale-x-[-1] rotate-[15deg]" />
+           </div>
+
+           <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="relative"
+           >
+              <h1 className="text-7xl md:text-9xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-blue-100 to-blue-500 [text-shadow:0_4px_0_#000,0_8px_0_#1e3a8a,0_12px_20px_rgba(59,130,246,0.6)] leading-none select-none px-12">
+                RANKING
+              </h1>
+              <div className="h-[3px] w-full bg-gradient-to-r from-transparent via-blue-500 to-transparent mt-2 opacity-50 shadow-[0_0_10px_#3b82f6]" />
+           </motion.div>
         </div>
-        <p className="text-blue-400 font-extrabold uppercase tracking-[0.4em] text-[10px] drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">
+        
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="text-blue-400 font-black uppercase tracking-[0.4em] text-[11px] mt-4 italic drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]"
+        >
           Os melhores mestres da memória
-        </p>
+        </motion.p>
       </div>
 
-      <div className="w-full max-w-xl space-y-6 relative z-20 px-4">
-        {/* Mode Selector - 3 Columns */}
-        <div className="flex flex-col items-center gap-4">
-          <div className="flex items-center gap-2 text-[9px] font-black text-blue-500 uppercase tracking-[0.3em]">
-            <div className="h-[1px] w-8 bg-blue-500/30" />
+      <div className="w-full max-w-xl space-y-8 relative z-20 px-4">
+        {/* Filtering Systems */}
+        <div className="flex flex-col items-center gap-6">
+          <div className="flex items-center gap-4 text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] w-full px-8">
+            <div className="h-[1.5px] flex-1 bg-gradient-to-r from-transparent to-blue-500/50" />
             MODO DE RANKING
-            <div className="h-[1px] w-8 bg-blue-500/30" />
+            <div className="h-[1.5px] flex-1 bg-gradient-to-l from-transparent to-blue-500/50" />
           </div>
 
-          <div className="w-full grid grid-cols-3 bg-[#001025]/80 p-1.5 rounded-2xl border border-blue-900/50 shadow-2xl backdrop-blur-md">
-            <button 
-              onClick={() => onModeChange('total')}
-              className={`flex flex-col items-center justify-center gap-1 py-3 rounded-xl transition-all relative ${mode === 'total' ? 'text-white' : 'text-blue-400/50'}`}
-            >
-              {mode === 'total' && (
-                <motion.div layoutId="activeMode" className="absolute inset-0 bg-blue-600 rounded-xl shadow-[0_0_15px_rgba(37,99,235,0.5)] border border-blue-400/30" />
-              )}
-              <Trophy className="w-5 h-5 relative z-10" />
-              <span className="text-[10px] font-black uppercase tracking-widest relative z-10">Geral</span>
-            </button>
-            <button 
-              onClick={() => onModeChange('solo')}
-              className={`flex flex-col items-center justify-center gap-1 py-3 rounded-xl transition-all relative ${mode === 'solo' ? 'text-white' : 'text-blue-400/50'}`}
-            >
-              {mode === 'solo' && (
-                <motion.div layoutId="activeMode" className="absolute inset-0 bg-blue-600 rounded-xl shadow-[0_0_15px_rgba(37,99,235,0.5)] border border-blue-400/30" />
-              )}
-              <User className="w-5 h-5 relative z-10" />
-              <span className="text-[10px] font-black uppercase tracking-widest relative z-10">Solo</span>
-            </button>
-            <button 
-              onClick={() => onModeChange('versus')}
-              className={`flex flex-col items-center justify-center gap-1 py-3 rounded-xl transition-all relative ${mode === 'versus' ? 'text-white' : 'text-blue-400/50'}`}
-            >
-              {mode === 'versus' && (
-                <motion.div layoutId="activeMode" className="absolute inset-0 bg-blue-600 rounded-xl shadow-[0_0_15px_rgba(37,99,235,0.5)] border border-blue-400/30" />
-              )}
-              <Swords className="w-5 h-5 relative z-10" />
-              <span className="text-[10px] font-black uppercase tracking-widest relative z-10">Versus</span>
-            </button>
-          </div>
+          <div className="w-full space-y-4">
+            {/* Primary Modes */}
+            <div className="flex bg-[#001025]/90 p-1.5 rounded-[2rem] border border-blue-500/30 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+               <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #3b82f6 1px, transparent 1px)', backgroundSize: '15px 15px' }} />
+               <FilterButton label="Geral" active={mode === 'total'} onClick={() => onModeChange('total')} icon={<Trophy className="w-4 h-4" />} />
+               <FilterButton label="Solo" active={mode === 'solo'} onClick={() => onModeChange('solo')} icon={<User className="w-4 h-4" />} />
+               <FilterButton label="Versus" active={mode === 'versus'} onClick={() => onModeChange('versus')} icon={<Swords className="w-4 h-4" />} />
+            </div>
 
-          {/* Tab Selector - 2 Columns */}
-          <div className="w-full grid grid-cols-2 bg-[#001025]/40 p-1 rounded-2xl border border-blue-900/30">
-            <button 
-              onClick={() => setTab('global')}
-              className={`flex items-center justify-center gap-2 py-2.5 rounded-xl font-black text-[10px] transition-all relative ${tab === 'global' ? 'text-white' : 'text-blue-400/50'}`}
-            >
-              {tab === 'global' && <motion.div layoutId="activeTab" className="absolute inset-0 bg-blue-600 rounded-xl shadow-lg border border-blue-400/20" />}
-              <Globe className="w-4 h-4 relative z-10" />
-              <span className="relative z-10 uppercase tracking-widest">Global</span>
-            </button>
-            <button 
-              onClick={() => setTab('local')}
-              className={`flex items-center justify-center gap-2 py-2.5 rounded-xl font-black text-[10px] transition-all relative ${tab === 'local' ? 'text-white' : 'text-blue-400/50'}`}
-            >
-              {tab === 'local' && <motion.div layoutId="activeTab" className="absolute inset-0 bg-blue-600 rounded-xl shadow-lg border border-blue-400/20" />}
-              <svg className="w-4 h-4 relative z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-              <span className="relative z-10 uppercase tracking-widest">Local</span>
-            </button>
+            {/* Scope Selection */}
+            <div className="flex bg-[#001025]/60 p-1 rounded-2xl border border-blue-500/20 max-w-xs mx-auto">
+               <FilterButton label="Global" active={tab === 'global'} onClick={() => setTab('global')} icon={<Globe className="w-4 h-4" />} glowColor="dark" />
+               <FilterButton label="Local" active={tab === 'local'} onClick={() => setTab('local')} icon={<Award className="w-4 h-4" />} glowColor="dark" />
+            </div>
           </div>
         </div>
 
@@ -169,158 +258,55 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, userProfi
             >
               {loadingGlobal ? (
                 <div className="py-20 text-center">
-                  <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                  <p className="text-blue-400 font-bold animate-pulse uppercase tracking-widest text-[10px]">Sincronizando Ranking...</p>
+                  <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-400 rounded-full animate-spin mx-auto mb-6 shadow-[0_0_30px_rgba(59,130,246,0.3)]" />
+                  <p className="text-blue-400 font-black animate-pulse uppercase tracking-[0.3em] text-[11px]">Sincronizando Rede Global...</p>
                 </div>
               ) : filteredRanking.length > 0 ? (
                 <div className="flex flex-col items-center">
-                  {/* Podium Base Grid */}
-                  <div className="flex items-end justify-center w-full max-w-lg gap-2 relative min-h-[420px] mb-8">
-                    
+                  {/* Pódium Section */}
+                  <div className="flex items-end justify-center w-full gap-2 relative min-h-[400px] mb-12 px-2">
                     {/* 2nd Place */}
-                    {podium[1] && (
-                      <div className="flex-1 flex flex-col items-center relative z-10">
-                         <div className="relative w-full max-w-[120px]">
-                           {/* Shield */}
-                           <div className="absolute inset-0 scale-[1.1] translate-y-2 opacity-80">
-                             <ShieldSvg color="#94a3b8" rank={2} />
-                           </div>
-                           
-                           <div className="relative z-10 flex flex-col items-center pb-6 pt-8">
-                              <div className="w-20 h-20 rounded-full border-[3px] border-slate-400 p-0.5 mb-2 shadow-[0_0_15px_rgba(148,163,184,0.4)]">
-                                <div className="w-full h-full rounded-full overflow-hidden bg-slate-900 border border-slate-500/30">
-                                  {podium[1].avatarUrl ? (
-                                    <img src={podium[1].avatarUrl} alt={podium[1].username} className="w-full h-full object-cover" />
-                                  ) : (
-                                    <User className="w-10 h-10 text-slate-400 mx-auto mt-4" />
-                                  )}
-                                </div>
-                              </div>
-                              
-                              <div className="relative -mt-6 bg-[#001025] border-2 border-slate-400 rounded-full w-8 h-8 flex items-center justify-center text-sm font-black z-20 shadow-xl text-white">2</div>
-                              
-                              <h3 className="font-black text-[12px] text-white uppercase mt-4 text-center w-full truncate px-2 leading-tight drop-shadow-md">{podium[1].username || 'Jogador'}</h3>
-                              <div className="bg-blue-600/20 border border-blue-500/30 rounded px-2 py-0.5 mt-1">
-                                <span className="text-[9px] font-black text-blue-300">LV {podium[1].level || 1}</span>
-                              </div>
-                              <p className="text-3xl font-black text-white mt-1 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] tracking-tighter">
-                                {mode === 'solo' ? podium[1].soloPoints?.toLocaleString() : mode === 'versus' ? podium[1].versusPoints?.toLocaleString() : podium[1].totalPoints?.toLocaleString()}
-                              </p>
-                              <p className="text-[8px] font-black text-blue-400 uppercase tracking-widest leading-none">Pontos</p>
-                           </div>
-                         </div>
-                         {/* Platform */}
-                         <div className="w-24 h-12 bg-gradient-to-b from-slate-400/20 to-slate-400/0 rounded-[100%] border-t border-slate-400/40 -mt-2 blur-[1px]" />
-                      </div>
-                    )}
-
+                    <div className="flex-1">
+                       {podium[0] && <PodiumCard entry={podium[0]} rank={2} mode={mode} />}
+                    </div>
                     {/* 1st Place */}
-                    {podium[0] && (
-                      <div className="flex-[1.2] flex flex-col items-center z-30 pb-4">
-                         <div className="mb-[-15px] relative z-40">
-                            <Crown className="w-12 h-12 text-yellow-400 drop-shadow-[0_0_10px_#fbbf24]" fill="#fbbf24" strokeWidth={1} />
-                         </div>
-                         <div className="relative w-full max-w-[150px]">
-                            {/* Gold Shield */}
-                           <div className="absolute inset-0 scale-[1.15] translate-y-3">
-                             <ShieldSvg color="#fbbf24" rank={1} />
-                           </div>
-                           
-                           <div className="relative z-10 flex flex-col items-center pb-10 pt-8">
-                              <div className="w-24 h-24 rounded-full border-[4px] border-yellow-400 p-1 mb-2 shadow-[0_0_25px_rgba(251,191,36,0.6)]">
-                                <div className="w-full h-full rounded-full overflow-hidden bg-slate-900 border border-yellow-500/50">
-                                  {podium[0].avatarUrl ? (
-                                    <img src={podium[0].avatarUrl} alt={podium[0].username} className="w-full h-full object-cover" />
-                                  ) : (
-                                    <User className="w-12 h-12 text-yellow-400 mx-auto mt-5" />
-                                  )}
-                                </div>
-                              </div>
-                              
-                              <div className="relative -mt-7 bg-yellow-400 border-2 border-white rounded-full w-9 h-9 flex items-center justify-center text-base font-black z-20 shadow-2xl text-black">1</div>
-                              
-                              <h3 className="font-black text-[14px] text-white uppercase mt-4 text-center w-full truncate px-4 leading-tight drop-shadow-lg">{podium[0].username}</h3>
-                              <div className="bg-yellow-400/20 border border-yellow-400/30 rounded px-3 py-0.5 mt-1">
-                                <span className="text-[11px] font-black text-yellow-400">LV {podium[0].level || 1}</span>
-                              </div>
-                              <p className="text-5xl font-black text-yellow-400 mt-1 leading-none drop-shadow-[0_0_15px_rgba(251,191,36,0.6)] tracking-tighter">
-                                {mode === 'solo' ? podium[0].soloPoints?.toLocaleString() : mode === 'versus' ? podium[0].versusPoints?.toLocaleString() : podium[0].totalPoints?.toLocaleString()}
-                              </p>
-                              <p className="text-[10px] font-black text-yellow-600 uppercase tracking-widest mt-0.5">Pontos Mundiais</p>
-                           </div>
-                         </div>
-                         {/* Platform */}
-                         <div className="w-32 h-16 bg-gradient-to-b from-yellow-400/20 to-yellow-400/0 rounded-[100%] border-t border-yellow-400/40 -mt-2 blur-[1px]" />
-                      </div>
-                    )}
-
+                    <div className="flex-[1.1] scale-110">
+                       {podium[1] && <PodiumCard entry={podium[1]} rank={1} mode={mode} />}
+                    </div>
                     {/* 3rd Place */}
-                    {podium[2] && (
-                      <div className="flex-1 flex flex-col items-center relative z-10">
-                         <div className="relative w-full max-w-[120px]">
-                           {/* Shield */}
-                           <div className="absolute inset-0 scale-[1.1] translate-y-2 opacity-80">
-                             <ShieldSvg color="#f97316" rank={3} />
-                           </div>
-                           
-                           <div className="relative z-10 flex flex-col items-center pb-6 pt-8">
-                              <div className="w-20 h-20 rounded-full border-[3px] border-orange-500 p-0.5 mb-2 shadow-[0_0_15px_rgba(249,115,22,0.4)]">
-                                <div className="w-full h-full rounded-full overflow-hidden bg-slate-900 border border-orange-500/30">
-                                  {podium[2].avatarUrl ? (
-                                    <img src={podium[2].avatarUrl} alt={podium[2].username} className="w-full h-full object-cover" />
-                                  ) : (
-                                    <User className="w-10 h-10 text-orange-500 mx-auto mt-4" />
-                                  )}
-                                </div>
-                              </div>
-                              
-                              <div className="relative -mt-6 bg-[#001025] border-2 border-orange-500 rounded-full w-8 h-8 flex items-center justify-center text-sm font-black z-20 shadow-xl text-white">3</div>
-                              
-                              <h3 className="font-black text-[12px] text-white uppercase mt-4 text-center w-full truncate px-2 leading-tight drop-shadow-md">{podium[2].username}</h3>
-                              <div className="bg-blue-600/20 border border-blue-500/30 rounded px-2 py-0.5 mt-1">
-                                <span className="text-[9px] font-black text-blue-300">LV {podium[2].level || 1}</span>
-                              </div>
-                              <p className="text-3xl font-black text-orange-500 mt-1 leading-none drop-shadow-[0_0_10px_rgba(249,115,22,0.4)] tracking-tighter">
-                                {mode === 'solo' ? podium[2].soloPoints?.toLocaleString() : mode === 'versus' ? podium[2].versusPoints?.toLocaleString() : podium[2].totalPoints?.toLocaleString()}
-                              </p>
-                              <p className="text-[8px] font-black text-orange-600 uppercase tracking-widest leading-none">Pontos</p>
-                           </div>
-                         </div>
-                         {/* Platform */}
-                         <div className="w-24 h-12 bg-gradient-to-b from-orange-400/20 to-orange-400/0 rounded-[100%] border-t border-orange-400/40 -mt-2 blur-[1px]" />
-                      </div>
-                    )}
+                    <div className="flex-1">
+                       {podium[2] && <PodiumCard entry={podium[2]} rank={3} mode={mode} />}
+                    </div>
                   </div>
 
-                  {/* List for 4+ */}
+                  {/* List Container */}
                   {remaining.length > 0 && (
-                    <div className="w-full max-w-lg bg-[#001025]/60 rounded-3xl border border-blue-900/50 overflow-hidden backdrop-blur-md shadow-inner mb-8">
-                      <div className="divide-y divide-blue-900/30">
+                    <div className="w-full bg-[#001025]/80 rounded-[2.5rem] border border-blue-500/30 overflow-hidden backdrop-blur-xl shadow-2xl relative mb-12">
+                      <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'linear-gradient(to right, #3b82f6 1px, transparent 1px), linear-gradient(to bottom, #3b82f6 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+                      <div className="divide-y divide-blue-500/10 relative z-10">
                         {remaining.map((entry, i) => (
-                          <div key={i} className="flex items-center justify-between p-4 hover:bg-blue-600/5 transition-all group">
+                          <div key={i} className="flex items-center justify-between p-5 hover:bg-blue-600/5 transition-all group relative">
                             <div className="flex items-center gap-4">
-                              <span className="w-6 font-black text-blue-700 text-lg group-hover:text-blue-400">#{i + 4}</span>
-                              <div className="w-10 h-10 rounded-full bg-blue-900/40 p-0.5 border border-blue-700/30">
-                                <div className="w-full h-full rounded-full overflow-hidden">
+                              <span className="w-8 font-black text-blue-600/50 text-base group-hover:text-blue-400 transition-colors">#{i + 4}</span>
+                              <div className="w-12 h-12 rounded-full border border-blue-500/30 p-0.5">
+                                <div className="w-full h-full rounded-full overflow-hidden bg-blue-900/20">
                                   {entry.avatarUrl ? (
                                     <img src={entry.avatarUrl} alt={entry.username} className="w-full h-full object-cover" />
                                   ) : (
-                                    <User className="w-6 h-6 text-blue-500/50 mx-auto mt-2" />
+                                    <User className="w-6 h-6 text-blue-500/30 mx-auto mt-2.5" />
                                   )}
                                 </div>
                               </div>
                               <div className="flex flex-col">
-                                <span className="font-black text-sm text-white group-hover:text-blue-200">{entry.username}</span>
-                                <div className="bg-blue-900/40 border border-blue-800/50 rounded px-1.5 py-0 min-w-fit w-fit">
-                                  <span className="text-[8px] font-black text-blue-400 uppercase">LV {entry.level || 1}</span>
-                                </div>
+                                <span className="font-black text-[13px] text-blue-100 uppercase tracking-tight group-hover:text-white">{entry.username}</span>
+                                <span className="text-[9px] font-black text-blue-500/60 uppercase">LV {entry.level || 1}</span>
                               </div>
                             </div>
                             <div className="text-right">
-                              <span className="font-black text-xl text-white tracking-tighter group-hover:text-blue-400">
-                                {mode === 'solo' ? entry.soloPoints?.toLocaleString() : mode === 'versus' ? entry.versusPoints?.toLocaleString() : entry.totalPoints?.toLocaleString()}
+                              <span className="font-black text-2xl text-white tracking-tighter group-hover:text-blue-400">
+                                {(mode === 'solo' ? entry.soloPoints : mode === 'versus' ? entry.versusPoints : entry.totalPoints)?.toLocaleString()}
                               </span>
-                              <span className="block text-[7px] uppercase tracking-widest text-blue-600 font-black">Pontos</span>
+                              <div className="h-0.5 w-full bg-blue-500/10 rounded-full mt-0.5" />
                             </div>
                           </div>
                         ))}
@@ -328,11 +314,11 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, userProfi
                     </div>
                   )}
                 </div>
-
               ) : (
-                <div className="text-center py-24 bg-blue-950/20 rounded-[3rem] border border-blue-900/50 backdrop-blur-sm">
-                  <p className="text-blue-400 font-black text-xl mb-2 italic">O Ranking está vazio!</p>
-                  <p className="text-blue-500/70 text-[10px] uppercase tracking-widest font-bold">Seja o primeiro a dominar o topo em modo {mode}!</p>
+                <div className="text-center py-24 bg-blue-950/10 rounded-[3rem] border border-blue-900/50 backdrop-blur-sm">
+                  <Trophy className="w-16 h-16 text-blue-900/30 mx-auto mb-4" />
+                  <p className="text-blue-400 font-black text-2xl mb-2 italic tracking-tighter">Ranking Vazio</p>
+                  <p className="text-blue-500/50 text-[10px] uppercase tracking-[0.4em] font-black">Seja o primeiro mestre!</p>
                 </div>
               )}
             </motion.div>
@@ -344,146 +330,95 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, userProfi
               exit={{ opacity: 0 }}
               className="py-12 space-y-12"
             >
-              <div className="flex justify-end">
+              <div className="flex justify-center">
                 <button 
                   onClick={onClear} 
-                  className="flex items-center gap-2 text-red-500 hover:bg-red-500/10 transition-all text-[10px] font-black uppercase tracking-widest px-6 py-3 bg-red-500/5 rounded-2xl border border-red-500/20 group"
+                  className="flex items-center gap-3 px-8 py-4 bg-red-600/10 hover:bg-red-600/20 text-red-500 border border-red-500/30 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all shadow-lg group"
                 >
-                  <Trash2 className="w-4 h-4 group-hover:rotate-12 transition-transform" /> 
+                  <Trash2 className="w-5 h-5 group-hover:rotate-12 transition-transform" /> 
                   Limpar Registros Locais
                 </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Solo Local Records */}
-                <div className="bg-[#001025]/60 p-8 rounded-[2.5rem] border border-blue-900 shadow-2xl relative overflow-hidden backdrop-blur-md">
-                   {/* Decoration */}
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full blur-3xl -mr-16 -mt-16" />
-                  
-                  <div className="flex items-center gap-4 mb-10 relative z-10">
-                    <div className="p-4 bg-green-500/10 rounded-2xl border border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]">
-                      <Clock className="w-7 h-7 text-green-400" />
+                {/* Local Stats Panels */}
+                {[
+                  { title: 'Solo Offline', icon: <Clock className="text-green-500" />, stats: ranking.solo.sort((a,b) => a.bestTime - b.bestTime).slice(0, 5), color: 'green' },
+                  { title: 'Versus Local', icon: <Swords className="text-purple-500" />, stats: ranking.multiplayer.sort((a,b) => b.wins - a.wins).slice(0, 5), color: 'purple' }
+                ].map((panel, idx) => (
+                  <div key={idx} className={`bg-[#001025]/80 p-8 rounded-[3rem] border border-${panel.color}-500/20 shadow-2xl relative overflow-hidden backdrop-blur-md`}>
+                    <div className="flex items-center gap-4 mb-8">
+                      <div className={`p-4 bg-${panel.color}-500/10 rounded-2xl border border-${panel.color}-500/20`}>{panel.icon}</div>
+                      <h2 className="text-2xl font-black uppercase tracking-tighter italic">{panel.title}</h2>
                     </div>
-                    <div>
-                      <h2 className="text-2xl font-black uppercase tracking-tighter italic leading-none">Solo Offline</h2>
-                      <p className="text-[10px] font-bold text-green-500/60 uppercase tracking-[0.2em] mt-1 ml-1">Registros Locais</p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4 relative z-10">
-                    {ranking.solo.length > 0 ? (
-                      ranking.solo.sort((a,b) => a.bestTime - b.bestTime).slice(0, 5).map((entry, i) => (
-                        <div key={i} className="flex items-center justify-between p-5 bg-blue-900/10 rounded-3xl border border-blue-900/30 hover:bg-blue-600/5 transition-colors group">
-                          <div className="flex items-center gap-5">
-                            <span className="font-black text-blue-500 text-xl italic w-6">#{i + 1}</span>
-                            <div>
-                              <p className="font-black text-white text-base group-hover:text-blue-200 transition-colors">{entry.nickname}</p>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[8px] text-blue-400 uppercase font-black tracking-widest bg-blue-900/40 px-2 py-0.5 rounded-full">
-                                  {entry.difficulty}
-                                </span>
-                              </div>
-                            </div>
+                    <div className="space-y-4">
+                      {panel.stats.length > 0 ? panel.stats.map((entry: any, i: number) => (
+                        <div key={i} className="flex items-center justify-between p-5 bg-blue-900/10 rounded-3xl border border-blue-900/30">
+                          <div className="flex items-center gap-4">
+                            <span className="font-black text-xl italic text-blue-700">#{i + 1}</span>
+                            <span className="font-black text-lg text-white">{entry.nickname}</span>
                           </div>
-                          <div className="text-right">
-                            <p className="text-green-400 font-black text-3xl tracking-tighter drop-shadow-[0_0_8px_rgba(34,197,94,0.3)]">{entry.bestTime}s</p>
-                            <p className="text-[9px] text-blue-700 font-black uppercase tracking-tighter mt-1">{entry.attempts} TENTATIVAS</p>
-                          </div>
+                          <span className={`text-${panel.color}-400 font-black text-2xl tracking-tighter`}>
+                             {idx === 0 ? `${entry.bestTime}s` : `${entry.wins} Wit`}
+                          </span>
                         </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-16 border-2 border-dashed border-blue-900/30 rounded-3xl">
-                        <p className="text-blue-500/50 font-black uppercase tracking-widest text-[10px] italic">Sem recordes locais.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Local Multiplayer Records */}
-                <div className="bg-[#001025]/60 p-8 rounded-[2.5rem] border border-blue-900 shadow-2xl relative overflow-hidden backdrop-blur-md">
-                  {/* Decoration */}
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl -mr-16 -mt-16" />
-
-                  <div className="flex items-center gap-4 mb-10 relative z-10">
-                    <div className="p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.1)]">
-                      <Swords className="w-7 h-7 text-purple-400" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-black uppercase tracking-tighter italic leading-none">Versus Local</h2>
-                      <p className="text-[10px] font-bold text-purple-500/60 uppercase tracking-[0.2em] mt-1 ml-1">Registros Locais</p>
+                      )) : (
+                        <p className="text-blue-500/30 text-center py-10 font-black uppercase tracking-widest text-[9px]">Nenhum registro</p>
+                      )}
                     </div>
                   </div>
-
-                  <div className="space-y-4 relative z-10">
-                    {ranking.multiplayer.length > 0 ? (
-                      ranking.multiplayer.sort((a,b) => b.wins - a.wins).slice(0, 5).map((entry, i) => (
-                        <div key={i} className="flex items-center justify-between p-5 bg-blue-900/10 rounded-3xl border border-blue-900/30 hover:bg-purple-600/5 transition-colors group">
-                          <div className="flex items-center gap-5">
-                            <span className="font-black text-purple-600 text-xl italic w-6">#{i + 1}</span>
-                            <span className="font-black text-white text-base group-hover:text-purple-200 transition-colors">{entry.nickname}</span>
-                          </div>
-                          <div className="bg-purple-600/10 text-purple-400 px-5 py-2 rounded-2xl font-black text-xs border border-purple-500/30 shadow-lg group-hover:bg-purple-600/20 transition-all">
-                            {entry.wins} VITÓRIAS
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-16 border-2 border-dashed border-blue-900/30 rounded-3xl">
-                        <p className="text-blue-500/50 font-black uppercase tracking-widest text-[10px] italic">Sem dados registrados.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                ))}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
       
-      {/* Fixed User Summary Footer */}
-      <div className="fixed bottom-0 left-0 w-full p-4 z-50">
-        <div className="max-w-xl mx-auto bg-[#001025]/95 border border-blue-500/50 rounded-[2rem] p-4 flex items-center justify-between gap-4 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] backdrop-blur-xl">
-           <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-full border-2 border-blue-500/50 p-0.5 overflow-hidden shadow-inner">
-                {userProfile?.avatarUrl ? (
-                  <img src={userProfile.avatarUrl} className="w-full h-full object-cover rounded-full" />
-                ) : (
-                  <div className="w-full h-full bg-blue-900/50 flex items-center justify-center rounded-full">
-                    <User className="w-6 h-6 text-blue-400" />
+      {/* Premium Footer Summary */}
+      <div className="fixed bottom-0 left-0 w-full p-6 z-50">
+        <div className="max-w-xl mx-auto bg-[#001025]/95 border-2 border-blue-500/60 rounded-[3rem] p-6 flex items-center justify-between gap-6 shadow-[0_-20px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(59,130,246,0.3)] backdrop-blur-2xl relative overflow-hidden">
+           <div className="absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_10px_#3b82f6]" />
+           
+           <div className="flex items-center gap-5">
+              <div className="relative group">
+                <div className="w-16 h-16 rounded-full border-2 border-blue-500/50 p-1 relative z-10 shadow-[0_0_15px_rgba(59,130,246,0.4)]">
+                  <div className="w-full h-full rounded-full overflow-hidden bg-blue-900/20">
+                    {userProfile?.avatarUrl ? (
+                      <img src={userProfile.avatarUrl} className="w-full h-full object-cover rounded-full" />
+                    ) : (
+                      <User className="w-8 h-8 text-blue-400/50 mx-auto mt-3.5" />
+                    )}
                   </div>
-                )}
-              </div>
-              <div className="flex flex-col">
-                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest leading-none mb-1">Sua Posição</p>
-                <div className="flex items-center gap-1">
-                  {/* Laurel Icon SVG */}
-                  <svg viewBox="0 0 24 24" className="w-5 h-5 text-yellow-500 opacity-80" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M7 10 L4 7 L7 4 M17 10 L20 7 L17 4 M12 20 L12 20" />
-                    <circle cx="12" cy="12" r="5" fill="currentColor" fillOpacity="0.2" />
-                  </svg>
-                  <span className="text-3xl font-black text-white italic leading-none">{myRank}º</span>
+                </div>
+                <div className="absolute -top-1 -right-1 z-20">
+                   <div className="bg-yellow-500 border border-white rounded-lg px-2 py-0.5 shadow-xl">
+                      <span className="text-[9px] font-black text-black">LV {userProfile?.level || 1}</span>
+                   </div>
                 </div>
               </div>
-           </div>
 
-           <div className="hidden sm:flex flex-col items-center">
-              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest leading-none mb-1">Seu Nível</p>
-              <div className="bg-blue-600/30 border border-blue-500/50 rounded-lg px-3 py-1">
-                <span className="text-sm font-black text-white italic">LV {userProfile?.level || 1}</span>
+              <div className="flex flex-col">
+                 <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mb-1 italic">Sua Posição</p>
+                 <div className="flex items-center gap-2">
+                    <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                    <span className="text-4xl font-black text-white italic tracking-tighter leading-none">{myRank}º</span>
+                 </div>
               </div>
            </div>
 
            <div className="flex flex-col items-end">
-              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest leading-none mb-1">Seus Pontos</p>
-              <p className="text-2xl font-black text-yellow-400 italic leading-none tracking-tighter">{myPoints.toLocaleString()}</p>
-              <p className="text-[8px] font-black text-blue-500 uppercase tracking-[0.2em] mt-0.5">Pontos Mundiais</p>
+              <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mb-1 italic">Seus Pontos</p>
+              <p className="text-3xl font-black text-blue-100 italic leading-none tracking-tighter drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">{myPoints.toLocaleString()}</p>
+              <p className="text-[8px] font-black text-blue-600 uppercase tracking-[0.2em] mt-1">Pontos Globais</p>
            </div>
 
-           <div className="w-12 h-12 flex items-center justify-center">
-              <Medal className="w-10 h-10 text-blue-400 rotate-12 drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+           <div className="w-14 h-14 flex items-center justify-center relative">
+              <div className="absolute inset-0 bg-blue-600/10 blur-xl rounded-full" />
+              <Medal className="w-12 h-12 text-blue-400 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)] rotate-12 transition-transform hover:scale-110" />
            </div>
         </div>
       </div>
     </div>
   );
 }
+
