@@ -60,6 +60,7 @@ export interface RankingEntry {
   versusPoints: number;
   bestTimeEasy?: number;
   gamesPlayed: number;
+  level?: number;
 }
 
 export type GameStatus = 'waiting' | 'playing' | 'finished';

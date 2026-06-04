@@ -115,6 +115,9 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeCha
                           </div>
                           <div className="bg-slate-400/10 border border-slate-400/20 p-6 rounded-[2rem] w-full text-center">
                             <h3 className="font-black text-xl mb-1 truncate px-2">{podium[1].username}</h3>
+                            <div className="flex justify-center mb-1">
+                              <span className="px-2 py-0.5 bg-slate-600 rounded text-[10px] font-black uppercase tracking-widest text-slate-200">LV {podium[1].level || 1}</span>
+                            </div>
                             <p className="text-slate-400 font-black text-2xl">
                               {mode === 'solo' ? podium[1].soloPoints : mode === 'versus' ? podium[1].versusPoints : podium[1].totalPoints}
                             </p>
@@ -141,6 +144,9 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeCha
                           </div>
                           <div className="bg-yellow-400/10 border-2 border-yellow-400/30 p-8 rounded-[2.5rem] w-full text-center scale-110">
                             <h3 className="font-black text-2xl mb-1 truncate px-2 text-yellow-400">{podium[0].username}</h3>
+                            <div className="flex justify-center mb-2">
+                              <span className="px-2 py-0.5 bg-yellow-600 rounded text-[11px] font-black uppercase tracking-widest text-yellow-100 italic">LV {podium[0].level || 1}</span>
+                            </div>
                             <p className="text-yellow-400 font-black text-4xl">
                               {mode === 'solo' ? podium[0].soloPoints : mode === 'versus' ? podium[0].versusPoints : podium[0].totalPoints}
                             </p>
@@ -166,6 +172,9 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeCha
                           </div>
                           <div className="bg-orange-600/10 border border-orange-600/20 p-6 rounded-[2rem] w-full text-center">
                             <h3 className="font-black text-xl mb-1 truncate px-2">{podium[2].username}</h3>
+                            <div className="flex justify-center mb-1">
+                              <span className="px-2 py-0.5 bg-orange-800 rounded text-[10px] font-black uppercase tracking-widest text-orange-200">LV {podium[2].level || 1}</span>
+                            </div>
                             <p className="text-orange-600 font-black text-2xl">
                               {mode === 'solo' ? podium[2].soloPoints : mode === 'versus' ? podium[2].versusPoints : podium[2].totalPoints}
                             </p>
@@ -195,7 +204,10 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeCha
                                   <User className="w-5 h-5 text-blue-400" />
                                 )}
                               </div>
-                              <span className="font-bold text-lg">{entry.username}</span>
+                              <div className="flex flex-col">
+                                <span className="font-bold text-lg">{entry.username}</span>
+                                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Nível {entry.level || 1}</span>
+                              </div>
                             </div>
                             <div className="text-right">
                               <span className="font-black text-xl text-blue-200">

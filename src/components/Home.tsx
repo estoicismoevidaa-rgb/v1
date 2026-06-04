@@ -11,9 +11,10 @@ interface HomeProps {
   onLogout?: () => void;
   username?: string;
   avatarUrl?: string;
+  level?: number;
 }
 
-export function Home({ onNavigate, onLogout, username, avatarUrl }: HomeProps) {
+export function Home({ onNavigate, onLogout, username, avatarUrl, level }: HomeProps) {
   const menuItems = [
     { id: 'mode-selection', label: 'Jogar', icon: <Play className="w-6 h-6" />, color: 'bg-green-600 hover:bg-green-500' },
     { id: 'ranking', label: 'Ranking', icon: <Trophy className="w-6 h-6" />, color: 'bg-blue-600 hover:bg-blue-500' },
@@ -34,14 +35,19 @@ export function Home({ onNavigate, onLogout, username, avatarUrl }: HomeProps) {
                 onClick={() => onNavigate('settings')}
                 className="flex items-center gap-3 px-4 py-2 bg-blue-900/40 rounded-xl border border-blue-700 hover:border-green-500 hover:bg-blue-800 transition-all cursor-pointer shadow-lg active:scale-95 duration-200"
               >
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs overflow-hidden border border-blue-500/50">
+                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs overflow-hidden border border-blue-500/50 relative">
                   {avatarUrl ? (
                     <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
                   ) : (
                     username[0].toUpperCase()
                   )}
                 </div>
-                <span className="font-bold text-sm hidden sm:inline">{username}</span>
+                <div className="flex flex-col items-start leading-none">
+                   <span className="font-bold text-sm hidden sm:inline">{username}</span>
+                   {level !== undefined && (
+                     <span className="text-[9px] text-green-400 font-black uppercase tracking-tighter hidden sm:inline">Nível {level}</span>
+                   )}
+                </div>
               </button>
           ) : (
             <button 

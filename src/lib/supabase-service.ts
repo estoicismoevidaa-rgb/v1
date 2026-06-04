@@ -798,6 +798,7 @@ export async function getGlobalRanking(mode: 'solo' | 'versus' | 'total' = 'solo
       versus_points,
       best_time_easy,
       games_played,
+      level,
       profiles (
         username,
         avatar_url
@@ -819,6 +820,7 @@ export async function getGlobalRanking(mode: 'solo' | 'versus' | 'total' = 'solo
     soloPoints: item.solo_points || 0,
     versusPoints: item.versus_points || 0,
     bestTimeEasy: item.best_time_easy,
-    gamesPlayed: item.games_played
+    gamesPlayed: item.games_played,
+    level: item.level || 1
   }));
 }

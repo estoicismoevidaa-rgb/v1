@@ -159,11 +159,13 @@ export async function adicionarXP(
     games_lost: (statsRow.gamesLost || 0) + (ganhouPartida ? 0 : 1)
   };
 
-  const { error } = await supabase.from('stats').update(updates).eq('uid', userId);
+  const { error: updateError } = await supabase.from('stats').update(updates).eq('uid', userId);
   
-  if (!error) {
+  if (updateError) {
+    console.error('Error updating stats with XP:', updateError);
+  } else {
     // Save history
-    await supabase.from('xp_history').insert([{
+    const { error: historyError } = await supabase.from('xp_history').insert([{
       player_id: userId,
       mode: modo,
       xp_ganho: xpGanho,
@@ -172,6 +174,10 @@ export async function adicionarXP(
       level_depois: level,
       created_at: new Date().toISOString()
     }]);
+    
+    if (historyError) {
+      console.warn('Error saving XP history (table might be missing):', historyError);
+    }
   }
 
   return {

@@ -267,6 +267,7 @@ export async function getRanking(): Promise<RankingEntry[]> {
         versus_points,
         games_played,
         best_time_easy,
+        level,
         profiles (
           username,
           avatar_url
@@ -285,7 +286,8 @@ export async function getRanking(): Promise<RankingEntry[]> {
       soloPoints: row.solo_points || 0,
       versusPoints: row.versus_points || 0,
       bestTimeEasy: row.best_time_easy,
-      gamesPlayed: row.games_played
+      gamesPlayed: row.games_played,
+      level: row.level || 1
     }));
   } catch (err) {
     console.error('Error fetching ranking:', err);

@@ -142,7 +142,9 @@ export default function App() {
           setCurrentUserId(uid);
           const profile = await getProfile(uid);
           if (profile) {
-            setUserProfile(profile);
+            // Also fetch level for the badge on home
+            const { data: statsData } = await supabase.from('stats').select('level').eq('uid', uid).maybeSingle();
+            setUserProfile({ ...profile, level: statsData?.level || 1 });
             navigateAfterAuth();
           } else {
             // Profile entry missing but auth exists - try to create it from metadata
@@ -798,9 +800,17 @@ export default function App() {
           <AuthScreen 
             currentUid={currentUserId || getOrCreateUserId()} 
             onBack={() => setScreen('home')}
-            onAuthenticated={(profile) => {
+            onAuthenticated={async (profile) => {
               setCurrentUserId(profile.uid);
-              setUserProfile(profile);
+              
+              // Ensure level is fetched upon login for all devices sync
+              let userWithLevel = { ...profile, level: 1 };
+              if (!profile.isGuest) {
+                const { data: statsData } = await supabase.from('stats').select('level').eq('uid', profile.uid).maybeSingle();
+                userWithLevel.level = statsData?.level || 1;
+              }
+              
+              setUserProfile(userWithLevel);
               navigateAfterAuth();
             }} 
           />
@@ -812,6 +822,7 @@ export default function App() {
             onLogout={handleLogout}
             username={userProfile?.username}
             avatarUrl={userProfile?.avatarUrl}
+            level={userProfile?.level}
           />
         )}
 
