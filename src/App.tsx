@@ -64,7 +64,7 @@ import { BackgroundAnimation } from './components/BackgroundAnimation.tsx';
 import { Timer, Hash, User, Menu } from 'lucide-react';
 
 export default function App() {
-  const [zoom, setZoom] = useState(0.85);
+  const [zoom, setZoom] = useState(1);
   
   // Navigation & Flow
   const [screen, setScreen] = useState('home');
@@ -512,7 +512,11 @@ export default function App() {
               participouAteFinal: true
             });
             adicionarXP(currentUserId, xpGanho, myPlayer.score, 'multiplayer_online', rank === 1, players.length).then(res => {
-              if (res) setLevelUpData(res);
+              if (res) {
+                setLevelUpData(res);
+                // Update local profile state with new level immediately
+                setUserProfile(prev => prev ? { ...prev, level: res.level } : null);
+              }
             }).catch(console.error);
           }
         }
@@ -623,7 +627,11 @@ export default function App() {
                     comboMaximo: players[0]?.maxCombo || 0
                   });
                   adicionarXP(currentUserId, xpGanho, points, isOnlineSolo ? 'solo_online' : 'solo_local', true, 1).then(res => {
-                    if (res) setLevelUpData(res);
+                    if (res) {
+                      setLevelUpData(res);
+                      // Update local profile state with new level immediately
+                      setUserProfile(prev => prev ? { ...prev, level: res.level } : null);
+                    }
                   }).catch(console.error);
                 }
               }
@@ -732,13 +740,62 @@ export default function App() {
     }
   };
 
+  // Real-time listener for user level synchronization
+  useEffect(() => {
+    if (currentUserId && !currentUserId.startsWith('user_')) {
+      const channel = supabase
+        .channel(`user-stats-sync-${currentUserId}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'stats', filter: `uid=eq.${currentUserId}` },
+          (payload) => {
+            if (payload.new) {
+              const newLevel = (payload.new as any).level;
+              if (newLevel) {
+                setUserProfile(prev => {
+                  if (!prev || prev.level === newLevel) return prev;
+                  return { ...prev, level: newLevel };
+                });
+              }
+            }
+          }
+        )
+        .subscribe();
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [currentUserId]);
+
   useEffect(() => {
     if (screen === 'ranking' || screen === 'lobby') {
       setLoadingGlobal(true);
-      getGlobalRanking(rankingMode).then(res => {
-        setGlobalRanking(res);
-        setLoadingGlobal(false);
-      }).catch(() => setLoadingGlobal(false));
+      
+      const fetchRanking = () => {
+        getGlobalRanking(rankingMode).then(res => {
+          setGlobalRanking(res);
+          setLoadingGlobal(false);
+        }).catch(() => setLoadingGlobal(false));
+      };
+
+      fetchRanking();
+
+      // Subscribe to stats changes to keep ranking updated in real-time
+      const channel = supabase
+        .channel('global-ranking-realtime')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'stats' },
+          () => {
+            // Re-fetch ranking when any stats change (someone leveled up or got points)
+            getGlobalRanking(rankingMode).then(setGlobalRanking).catch(console.error);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [screen, rankingMode]);
 
