@@ -950,6 +950,7 @@ export default function App() {
               time={time}
               attempts={attempts}
               levelUpData={levelUpData}
+              currentUserId={currentUserId}
               onRestart={() => {
                 setLevelUpData(null);
                 restartGame();

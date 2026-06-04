@@ -19,47 +19,66 @@ interface ResultScreenProps {
   time?: number;
   attempts?: number;
   levelUpData?: any;
+  currentUserId?: string | null;
   onRestart: () => void;
   onMenu: () => void;
   onChangeDifficulty: () => void;
 }
 
-export function ResultScreen({ mode, players, difficulty, time, attempts, levelUpData, onRestart, onMenu, onChangeDifficulty }: ResultScreenProps) {
+export function ResultScreen({ mode, players, difficulty, time, attempts, levelUpData, currentUserId, onRestart, onMenu, onChangeDifficulty }: ResultScreenProps) {
   useEffect(() => {
-    // Play victory sound with a small delay for better reliability
-    const playTimer = setTimeout(() => {
-      audioController.play('victory');
-    }, 300);
-
-    const duration = 3 * 1000;
-    const end = Date.now() + duration;
-
-    const frame = () => {
-      confetti({
-        particleCount: 2,
-        angle: 60,
-        spread: 55,
-        origin: { x: 0 },
-        colors: ['#22c55e', '#3b82f6', '#f59e0b']
-      });
-      confetti({
-        particleCount: 2,
-        angle: 120,
-        spread: 55,
-        origin: { x: 1 },
-        colors: ['#22c55e', '#3b82f6', '#f59e0b']
-      });
-
-      if (Date.now() < end) {
-        requestAnimationFrame(frame);
+    // Determine if the current player is the winner
+    const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+    const winner = sortedPlayers[0];
+    
+    let result: 'victory' | 'defeat' = 'victory';
+    
+    if (mode === 'online' && currentUserId) {
+      if (winner && winner.uid !== currentUserId) {
+        result = 'defeat';
       }
-    };
-    frame();
+    } else if (mode === 'solo') {
+      result = 'victory';
+    } else if (mode === 'local') {
+      result = 'victory'; // In local MP, someone always wins on the screen
+    }
+
+    // Play result sound with a small delay for better reliability
+    const playTimer = setTimeout(() => {
+      audioController.play(result);
+    }, 500);
+
+    if (result === 'victory') {
+      const duration = 3 * 1000;
+      const end = Date.now() + duration;
+
+      const frame = () => {
+        confetti({
+          particleCount: 2,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: ['#22c55e', '#3b82f6', '#f59e0b']
+        });
+        confetti({
+          particleCount: 2,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: ['#22c55e', '#3b82f6', '#f59e0b']
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      };
+      frame();
+    }
 
     return () => {
       clearTimeout(playTimer);
     };
-  }, []);
+  }, [mode, players, currentUserId]);
 
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
 

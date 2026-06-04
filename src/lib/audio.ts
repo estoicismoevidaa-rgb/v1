@@ -15,7 +15,8 @@ class AudioController {
       flip: new Audio(`${baseUrl}cards/card_flip.ogg`),
       match: new Audio(`${baseUrl}ui/positive_feedback.ogg`),
       error: new Audio(`${baseUrl}ui/negative_feedback.ogg`),
-      victory: new Audio(`${baseUrl}celebration/tada.ogg`), 
+      victory: new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'), 
+      defeat: new Audio('https://assets.mixkit.co/active_storage/sfx/2014/2014-preview.mp3'),
       fanfare: new Audio(`${baseUrl}celebration/horns_fanfare.ogg`),
       combo: new Audio(`${baseUrl}ui/success.ogg`)
     };
