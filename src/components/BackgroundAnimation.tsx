@@ -60,8 +60,11 @@ export function BackgroundAnimation() {
   const [elements, setElements] = React.useState<any[]>([]);
 
   React.useEffect(() => {
-    // Generate 25 falling fruit elements with randomized positions, delays, size and opacity.
-    const newElements = Array.from({ length: 25 }).map((_, i) => {
+    // Generate fewer fruits on mobile for performance
+    const isMobile = window.innerWidth < 640;
+    const count = isMobile ? 8 : 25;
+
+    const newElements = Array.from({ length: count }).map((_, i) => {
       const emoji = FRUIT_EMOJIS[Math.floor(Math.random() * FRUIT_EMOJIS.length)];
       const delay = Math.random() * -20; // negative delay to spawn immediately in mid-fall
       const duration = 12 + Math.random() * 15; // slow, gentle fall duration (12s to 27s)

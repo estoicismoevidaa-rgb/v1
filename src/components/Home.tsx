@@ -80,31 +80,31 @@ export function Home({ onNavigate, username, avatarUrl }: HomeProps) {
              style={{ backgroundImage: 'radial-gradient(circle, #3b82f6 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
       </div>
 
-      {/* Foreground Realistic Fruits */}
+      {/* Foreground Realistic Fruits - Optimized for Mobile */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
         {/* Top */}
         <FloatingFruit emoji="🍇" className="top-[-2%] left-[4%]" delay={0} size={100} opacity={0.6} blur />
-        <FloatingFruit emoji="🍋" className="top-[5%] left-[35%]" delay={1} size={70} opacity={0.7} />
+        <FloatingFruit emoji="🍋" className="top-[5%] left-[35%] max-sm:hidden" delay={1} size={70} opacity={0.7} />
         <FloatingFruit emoji="🍒" className="top-[8%] right-[5%]" delay={0.5} size={90} opacity={0.7} />
         
         {/* Middle */}
-        <FloatingFruit emoji="🫐" className="top-[25%] left-[-2%]" delay={1.5} size={50} opacity={0.4} blur />
+        <FloatingFruit emoji="🫐" className="top-[25%] left-[-2%] max-sm:hidden" delay={1.5} size={50} opacity={0.4} blur />
         <FloatingFruit emoji="🍓" className="top-[30%] right-[1%]" delay={2} size={85} opacity={0.7} />
         
         {/* Bottom */}
-        <FloatingFruit emoji="🍌" className="bottom-[-3%] left-[2%]" delay={0.2} size={130} opacity={0.8} />
-        <FloatingFruit emoji="🥥" className="bottom-[5%] left-[58%]" delay={1.2} size={80} opacity={0.7} />
-        <FloatingFruit emoji="🍏" className="bottom-[2%] right-[5%]" delay={0.7} size={110} opacity={0.8} />
-        <FloatingFruit emoji="🍇" className="bottom-[10%] left-[35%]" delay={2.5} size={60} opacity={0.5} blur />
+        <FloatingFruit emoji="🍌" className="bottom-[-3%] left-[2%] max-sm:scale-75" delay={0.2} size={130} opacity={0.8} />
+        <FloatingFruit emoji="🥥" className="bottom-[5%] left-[58%] max-sm:hidden" delay={1.2} size={80} opacity={0.7} />
+        <FloatingFruit emoji="🍏" className="bottom-[2%] right-[5%] max-sm:scale-75" delay={0.7} size={110} opacity={0.8} />
+        <FloatingFruit emoji="🍇" className="bottom-[10%] left-[35%] max-sm:hidden" delay={2.5} size={60} opacity={0.5} blur />
       </div>
 
       {/* Header Profile - Premium Pill */}
-      <div className="absolute top-8 right-8 z-50">
+      <div className="absolute top-4 right-4 sm:top-8 sm:right-8 z-50">
         <button 
           onClick={() => onNavigate('settings')}
-          className="flex items-center gap-4 px-6 py-2.5 bg-[#001025]/90 border-[1.5px] border-blue-500 rounded-2xl hover:bg-blue-600/20 transition-all shadow-[0_0_30px_rgba(59,130,246,0.4)] group"
+          className="flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-2 sm:py-2.5 bg-[#001025]/90 border-[1.5px] border-blue-500 rounded-2xl hover:bg-blue-600/20 transition-all shadow-[0_0_30px_rgba(59,130,246,0.4)] group"
         >
-          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-black text-lg overflow-hidden border-2 border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 flex items-center justify-center font-black text-sm sm:text-lg overflow-hidden border-2 border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.3)]">
             {avatarUrl ? (
               <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
             ) : (
@@ -119,29 +119,29 @@ export function Home({ onNavigate, username, avatarUrl }: HomeProps) {
         </button>
       </div>
 
-      {/* Hero Section */}
+      {/* Hero Section - Scaled for Mobile */}
       <motion.div
         initial={{ y: -30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="text-center mb-12 relative z-30 flex flex-col items-center"
+        className="text-center mb-6 sm:mb-12 relative z-30 flex flex-col items-center max-sm:scale-[0.85] max-sm:mt-8"
       >
         {/* Green Neon Apple Logo */}
-        <div className="relative mb-8 group cursor-default">
+        <div className="relative mb-6 sm:mb-8 group cursor-default">
           {/* Tech Circles */}
           <motion.div 
             animate={{ rotate: 360 }}
             transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-blue-500/10 rounded-full pointer-events-none" 
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-64 sm:h-64 border border-blue-500/10 rounded-full pointer-events-none" 
           />
           <motion.div 
             animate={{ rotate: -360 }}
             transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 border-2 border-t-green-500/20 border-l-green-500/20 border-transparent rounded-full pointer-events-none" 
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-56 sm:w-72 sm:h-72 border-2 border-t-green-500/20 border-l-green-500/20 border-transparent rounded-full pointer-events-none" 
           />
           
-          <div className="absolute inset-0 bg-green-500/20 blur-[80px] rounded-full animate-pulse transition-all group-hover:bg-green-500/40" />
+          <div className="absolute inset-0 bg-green-500/20 blur-[60px] sm:blur-[80px] rounded-full animate-pulse transition-all group-hover:bg-green-500/40" />
           <Apple 
-            className="w-48 h-48 text-[#39ff14] drop-shadow-[0_0_40px_#39ff14] relative z-10" 
+            className="w-32 h-32 sm:w-48 h-48 text-[#39ff14] drop-shadow-[0_0_40px_#39ff14] relative z-10" 
             strokeWidth={0.8} 
           />
         </div>
@@ -152,7 +152,7 @@ export function Home({ onNavigate, username, avatarUrl }: HomeProps) {
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="text-5xl font-black text-blue-100 uppercase tracking-tighter leading-none italic drop-shadow-[0_5px_10px_rgba(0,0,0,0.8)]"
+              className="text-3xl sm:text-5xl font-black text-blue-100 uppercase tracking-tighter leading-none italic drop-shadow-[0_5px_10px_rgba(0,0,0,0.8)]"
             >
                 Jogo da
             </motion.h2>
@@ -160,7 +160,7 @@ export function Home({ onNavigate, username, avatarUrl }: HomeProps) {
               initial={{ x: 20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="text-8xl md:text-9xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-blue-200 to-blue-600 drop-shadow-[0_2px_0_rgba(0,0,0,1)] [text-shadow:0_3px_0_#000,0_6px_0_#1e3a8a,0_9px_0_#1e3a8a,0_15px_30px_rgba(0,0,0,0.8)] leading-[0.8] select-none text-wrap max-w-lg px-4"
+              className="text-6xl sm:text-8xl md:text-9xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-blue-200 to-blue-600 drop-shadow-[0_2px_0_rgba(0,0,0,1)] [text-shadow:0_3px_0_#000,0_6px_0_#1e3a8a,0_9px_0_#1e3a8a,0_15px_30px_rgba(0,0,0,0.8)] leading-[0.8] select-none text-wrap max-w-lg px-4"
             >
               Memória Frutas
             </motion.h1>
@@ -171,18 +171,18 @@ export function Home({ onNavigate, username, avatarUrl }: HomeProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
-          className="flex items-center gap-6 mt-10"
+          className="flex items-center gap-4 sm:gap-6 mt-6 sm:mt-10"
         >
-          <div className="h-[2px] w-16 bg-gradient-to-r from-transparent to-green-400" />
-          <p className="text-blue-200 font-bold text-lg uppercase tracking-widest px-4 drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]">
+          <div className="h-[2px] w-12 sm:w-16 bg-gradient-to-r from-transparent to-green-400" />
+          <p className="text-blue-200 font-bold text-sm sm:text-lg uppercase tracking-widest px-2 sm:px-4 drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]">
             Teste sua memória com as frutas mais deliciosas!
           </p>
-          <div className="h-[2px] w-16 bg-gradient-to-l from-transparent to-green-400" />
+          <div className="h-[2px] w-12 sm:w-16 bg-gradient-to-l from-transparent to-green-400" />
         </motion.div>
       </motion.div>
 
       {/* Menu Grid - High End Responsive Grid */}
-      <div className="grid grid-cols-2 gap-6 w-full max-w-xl relative z-30 mt-4">
+      <div className="grid grid-cols-2 gap-4 sm:gap-6 w-full max-w-xl relative z-30 mt-0 sm:mt-4 max-sm:scale-[0.9]">
         <TechButton 
           label="Jogar" 
           icon={<Play fill="currentColor" strokeWidth={0} />} 

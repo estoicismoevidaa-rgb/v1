@@ -25,9 +25,9 @@ export function SoloConfig({ onBack, onStart, initialNickname = '' }: SoloConfig
         <ChevronLeft className="w-6 h-6" /> Voltar
       </button>
 
-      <h2 className="text-3xl font-bold mb-8">Modo Solo</h2>
+      <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">Modo Solo</h2>
 
-      <div className="w-full max-w-md bg-blue-900/40 p-8 rounded-3xl border border-blue-700 shadow-2xl">
+      <div className="w-full max-w-md bg-blue-900/40 p-6 sm:p-8 rounded-3xl border border-blue-700 shadow-2xl max-sm:scale-95">
         <div className="mb-6">
           <label className="block text-sm font-medium mb-2 text-blue-200">Seu Nickname</label>
           <input

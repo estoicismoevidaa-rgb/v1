@@ -50,15 +50,15 @@ export function ModeSelection({ onNavigate, onChoice, isGuest }: ModeSelectionPr
       </div>
 
       {/* Central Title with glow effect like in image */}
-      <div className="relative mb-12 z-10">
+      <div className="relative mb-8 sm:mb-12 z-10 max-sm:scale-[0.85]">
         <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-48 h-1 bg-blue-500 blur-[2px] opacity-50" />
-        <h2 className="text-5xl font-black text-center text-white tracking-wider uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
+        <h2 className="text-4xl sm:text-5xl font-black text-center text-white tracking-wider uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
           Escolha o Modo
         </h2>
         <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-64 h-0.5 bg-gradient-to-r from-transparent via-blue-500 to-transparent" />
       </div>
 
-      <div className="w-full max-w-lg space-y-6 z-10">
+      <div className="w-full max-w-lg space-y-4 sm:space-y-6 z-10 max-sm:scale-[0.95] max-sm:origin-top">
         {modes.map((mode, index) => (
           <motion.button
             key={mode.id}
@@ -66,7 +66,7 @@ export function ModeSelection({ onNavigate, onChoice, isGuest }: ModeSelectionPr
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: index * 0.1 }}
             onClick={() => handleChoice(mode.id, mode.online)}
-            className={`w-full flex items-center gap-6 p-1 rounded-3xl transition-all relative group h-36 ${
+            className={`w-full flex items-center gap-4 sm:gap-6 p-1 rounded-3xl transition-all relative group h-28 sm:h-36 ${
               mode.online && isGuest 
                 ? 'opacity-80' 
                 : 'hover:scale-[1.02]'
@@ -80,40 +80,40 @@ export function ModeSelection({ onNavigate, onChoice, isGuest }: ModeSelectionPr
             }`} />
 
             {/* Icon Frame with Corners */}
-            <div className="ml-5 relative z-10 w-24 h-24 flex-shrink-0 flex items-center justify-center">
+            <div className="ml-3 sm:ml-5 relative z-10 w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 flex items-center justify-center">
               {/* Corner Brackets for Icon */}
               <div className="absolute inset-0">
-                 <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-green-500 rounded-tl-lg" />
-                 <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-green-500 rounded-tr-lg opacity-40" />
-                 <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-green-500 rounded-bl-lg opacity-40" />
-                 <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-green-500 rounded-br-lg" />
+                 <div className="absolute top-0 left-0 w-3 sm:w-4 h-3 sm:h-4 border-t-2 border-l-2 border-green-500 rounded-tl-lg" />
+                 <div className="absolute top-0 right-0 w-3 sm:w-4 h-3 sm:h-4 border-t-2 border-r-2 border-green-500 rounded-tr-lg opacity-40" />
+                 <div className="absolute bottom-0 left-0 w-3 sm:w-4 h-3 sm:h-4 border-b-2 border-l-2 border-green-500 rounded-bl-lg opacity-40" />
+                 <div className="absolute bottom-0 right-0 w-3 sm:w-4 h-3 sm:h-4 border-b-2 border-r-2 border-green-500 rounded-br-lg" />
               </div>
               
-              <div className={`w-20 h-20 rounded-2xl flex items-center justify-center bg-blue-900/20 border border-blue-500/20 ${
+              <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center bg-blue-900/20 border border-blue-500/20 ${
                 mode.online && isGuest ? 'text-blue-500' : 'text-green-500 drop-shadow-[0_0_10px_rgba(34,197,94,0.6)]'
               }`}>
-                {mode.online && isGuest ? <Lock className="w-10 h-10" /> : mode.icon}
+                {mode.online && isGuest ? <Lock className="w-8 h-8 sm:w-10 sm:h-10" /> : mode.icon}
               </div>
             </div>
 
             {/* Texts */}
-            <div className="flex-1 text-left relative z-10 space-y-1">
-              <div className="flex items-center gap-3">
-                <h3 className="text-3xl font-black text-white italic tracking-tight uppercase leading-none">{mode.label}</h3>
+            <div className="flex-1 text-left relative z-10 space-y-0.5 sm:space-y-1">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <h3 className="text-xl sm:text-3xl font-black text-white italic tracking-tight uppercase leading-none">{mode.label}</h3>
                 {mode.online && (
-                  <div className="bg-blue-600 px-2 py-0.5 rounded shadow-[0_0_10px_rgba(37,99,235,0.6)]">
-                    <span className="text-[10px] font-black uppercase tracking-tighter text-white">ONLINE</span>
+                  <div className="bg-blue-600 px-1.5 py-0.5 rounded shadow-[0_0_10px_rgba(37,99,235,0.6)]">
+                    <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-tighter text-white">ONLINE</span>
                   </div>
                 )}
               </div>
-              <p className="text-blue-200/80 text-sm font-medium tracking-tight pr-4">
+              <p className="text-blue-200/80 text-xs sm:text-sm font-medium tracking-tight pr-4">
                 {mode.desc}
               </p>
             </div>
 
             {/* Right Arrow */}
-            <div className="mr-6 relative z-10">
-              <ChevronRight className={`w-8 h-8 ${mode.online && isGuest ? 'text-blue-900' : 'text-blue-400 group-hover:text-white transition-colors'}`} />
+            <div className="mr-4 sm:mr-6 relative z-10">
+              <ChevronRight className={`w-6 h-6 sm:w-8 sm:h-8 ${mode.online && isGuest ? 'text-blue-900' : 'text-blue-400 group-hover:text-white transition-colors'}`} />
             </div>
           </motion.button>
         ))}

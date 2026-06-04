@@ -38,7 +38,7 @@ export function LocalMPConfig({ onBack, onStart }: LocalMPConfigProps) {
 
       <h2 className="text-3xl font-bold mb-8 text-center">Multiplayer Local</h2>
 
-      <div className="w-full max-w-md bg-blue-900/40 p-8 rounded-3xl border border-blue-700 shadow-2xl">
+      <div className="w-full max-w-md bg-blue-900/40 p-8 rounded-3xl border border-blue-700 shadow-2xl max-sm:scale-95">
         <div className="mb-6">
           <label className="block text-sm font-medium mb-2 text-blue-200">Adicionar Jogadores</label>
           <div className="flex flex-col sm:flex-row gap-2">

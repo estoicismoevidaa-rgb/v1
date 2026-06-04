@@ -169,10 +169,17 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, userProfi
         <div className="absolute inset-0 opacity-[0.05]" 
              style={{ backgroundImage: 'linear-gradient(45deg, #3b82f6 1px, transparent 1px), linear-gradient(-45deg, #3b82f6 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
         
-        {/* Animated Particles */}
-        {[...Array(15)].map((_, i) => (
-          <Particle key={i} delay={i * 0.5} />
-        ))}
+        {/* Animated Particles - Reduced for Mobile performance */}
+        <div className="hidden sm:block">
+          {[...Array(15)].map((_, i) => (
+            <Particle key={i} delay={i * 0.5} />
+          ))}
+        </div>
+        <div className="sm:hidden">
+          {[...Array(6)].map((_, i) => (
+            <Particle key={i} delay={i * 1.2} />
+          ))}
+        </div>
       </div>
 
       {/* Top Header */}
@@ -189,7 +196,7 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, userProfi
       </div>
 
       {/* Hero Title Container */}
-      <div className="w-full max-w-2xl text-center mb-10 relative z-20 px-4 mt-2">
+      <div className="w-full max-w-2xl text-center mb-6 sm:mb-10 relative z-20 px-4 mt-0 sm:mt-2 max-sm:scale-[0.85]">
         <div className="relative inline-block">
            {/* Blue Laurels */}
            <div className="absolute -left-20 top-1/2 -translate-y-1/2 w-16 h-16 text-blue-500 opacity-80 hidden md:block">
@@ -204,7 +211,7 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, userProfi
               animate={{ scale: 1, opacity: 1 }}
               className="relative"
            >
-              <h1 className="text-7xl md:text-9xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-blue-100 to-blue-500 [text-shadow:0_4px_0_#000,0_8px_0_#1e3a8a,0_12px_20px_rgba(59,130,246,0.6)] leading-none select-none px-12">
+              <h1 className="text-6xl sm:text-8xl md:text-9xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-blue-100 to-blue-500 [text-shadow:0_4px_0_#000,0_8px_0_#1e3a8a,0_12px_20px_rgba(59,130,246,0.6)] leading-none select-none px-6 sm:px-12">
                 RANKING
               </h1>
               <div className="h-[3px] w-full bg-gradient-to-r from-transparent via-blue-500 to-transparent mt-2 opacity-50 shadow-[0_0_10px_#3b82f6]" />
@@ -223,7 +230,7 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, userProfi
 
       <div className="w-full max-w-xl space-y-8 relative z-20 px-4">
         {/* Filtering Systems */}
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-4 sm:gap-6 max-sm:scale-[0.9]">
           <div className="flex items-center gap-4 text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] w-full px-8">
             <div className="h-[1.5px] flex-1 bg-gradient-to-r from-transparent to-blue-500/50" />
             MODO DE RANKING
@@ -263,8 +270,8 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, userProfi
                 </div>
               ) : filteredRanking.length > 0 ? (
                 <div className="flex flex-col items-center">
-                  {/* Pódium Section */}
-                  <div className="flex items-end justify-center w-full gap-2 relative min-h-[400px] mb-12 px-2">
+                  {/* Pódium Section - Scaled for Mobile */}
+                  <div className="flex items-end justify-center w-full gap-1 sm:gap-2 relative min-h-[350px] sm:min-h-[400px] mb-8 sm:mb-12 px-1 sm:px-2 max-sm:scale-90">
                     {/* 2nd Place */}
                     <div className="flex-1">
                        {podium[0] && <PodiumCard entry={podium[0]} rank={2} mode={mode} />}
@@ -374,9 +381,9 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, userProfi
         </AnimatePresence>
       </div>
       
-      {/* Premium Footer Summary */}
-      <div className="fixed bottom-0 left-0 w-full p-6 z-50">
-        <div className="max-w-xl mx-auto bg-[#001025]/95 border-2 border-blue-500/60 rounded-[3rem] p-6 flex items-center justify-between gap-6 shadow-[0_-20px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(59,130,246,0.3)] backdrop-blur-2xl relative overflow-hidden">
+      {/* Premium Footer Summary - Optimized for Mobile */}
+      <div className="fixed bottom-0 left-0 w-full p-4 sm:p-6 z-50">
+        <div className="max-w-xl mx-auto bg-[#001025]/95 border-2 border-blue-500/60 rounded-[2rem] sm:rounded-[3rem] p-4 sm:p-6 flex items-center justify-between gap-4 sm:gap-6 shadow-[0_-20px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(59,130,246,0.3)] backdrop-blur-2xl relative overflow-hidden max-sm:scale-[0.9] origin-bottom">
            <div className="absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_10px_#3b82f6]" />
            
            <div className="flex items-center gap-5">

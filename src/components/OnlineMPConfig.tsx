@@ -111,7 +111,7 @@ export function OnlineMPConfig({ onBack, onCreate, onJoin, initialNickname = '' 
         </div>
       )}
 
-      <div className="w-full max-w-md bg-blue-900/40 rounded-3xl border border-blue-700 shadow-2xl overflow-hidden">
+      <div className="w-full max-w-md bg-blue-900/40 rounded-3xl border border-blue-700 shadow-2xl overflow-hidden max-sm:scale-95">
         <div className="flex border-b border-blue-700">
           <button
             onClick={() => setActiveTab('create')}
