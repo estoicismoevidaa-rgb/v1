@@ -56,11 +56,11 @@ const TechButton = ({ label, icon, borderColor, glowColor, onClick, delay = 0, i
     </div>
 
     {/* Content */}
-    <div className="relative z-10 h-full flex flex-col items-center justify-center p-4">
-      <div className={`mb-3 transition-transform group-hover:scale-110 duration-300`}>
-        {React.cloneElement(icon as React.ReactElement, { className: `w-14 h-14 ${glowColor} drop-shadow-[0_0_15px_#fff]` })}
+    <div className="relative z-10 h-full flex flex-col items-center justify-center p-2">
+      <div className={`mb-1 transition-transform group-hover:scale-110 duration-300`}>
+        {React.cloneElement(icon as React.ReactElement, { className: `w-10 h-10 sm:w-14 sm:h-14 ${glowColor} drop-shadow-[0_0_15px_#fff]` })}
       </div>
-      <span className="text-white font-black text-2xl uppercase tracking-tighter drop-shadow-xl">{label}</span>
+      <span className="text-white font-black text-lg sm:text-2xl uppercase tracking-tighter drop-shadow-xl text-center leading-tight">{label}</span>
     </div>
     
     {/* Outer Glow on Hover */}
@@ -193,7 +193,7 @@ export function Home({ onNavigate, username, avatarUrl }: HomeProps) {
           delay={0.7}
         />
         <TechButton 
-          label="Ranking" 
+          label="Classificação" 
           icon={<Trophy strokeWidth={1.5} />} 
           borderColor="border-blue-500" 
           glowColor="text-blue-500"

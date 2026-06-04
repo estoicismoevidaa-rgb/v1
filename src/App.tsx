@@ -64,7 +64,20 @@ import { BackgroundAnimation } from './components/BackgroundAnimation.tsx';
 import { Timer, Hash, User, Menu } from 'lucide-react';
 
 export default function App() {
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 500 ? 0.75 : 1;
+    }
+    return 1;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setZoom(window.innerWidth < 500 ? 0.75 : 1);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   // Navigation & Flow
   const [screen, setScreen] = useState('home');
