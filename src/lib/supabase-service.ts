@@ -699,7 +699,8 @@ export async function submitSoloTime(userId: string, username: string, difficult
     updates[timeField] = time;
   }
 
-  await supabase.from('stats').upsert([updates]);
+  const { error } = await supabase.from('stats').upsert(updates, { onConflict: 'uid' });
+  if (error) console.error('Error in submitSoloTime:', error);
 }
 
 // Submit online points to global ranking
@@ -734,7 +735,8 @@ export async function submitOnlineScore(userId: string, points: number, username
     updates.versus_points = (stats?.versus_points || 0) + points;
   }
 
-  await supabase.from('stats').upsert([updates]);
+  const { error } = await supabase.from('stats').upsert(updates, { onConflict: 'uid' });
+  if (error) console.error('Error in submitOnlineScore:', error);
 }
 
 // Get global ranking (ordered by solo points, versus points or total points)

@@ -229,7 +229,8 @@ export async function updateUserStats(
       updates[diffKey] = timeInSeconds;
     }
 
-    await supabase.from('stats').upsert([updates]);
+    const { error: upsertError } = await supabase.from('stats').upsert(updates, { onConflict: 'uid' });
+    if (upsertError) throw upsertError;
     
     // Also save locally for quick access
     localStorage.setItem(`stats_${uid}`, JSON.stringify(updates));
