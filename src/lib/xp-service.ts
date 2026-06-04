@@ -104,6 +104,7 @@ export async function adicionarXP(
   pontuacao: number,
   modo: string,
   ganhouPartida: boolean,
+  totalJogadores: number = 1,
   currentStats?: UserStats
 ) {
   if (userId.startsWith('user_')) return null; // Ignore guests
@@ -153,13 +154,16 @@ export async function adicionarXP(
     leveledUp = true;
   }
 
+  // REGRAS: Somente contabiliza vitórias e derrotas em partidas Multiplayer Online (contra outros jogadores no lobby)
+  const isMultiplayerOnlineLobby = modo === 'multiplayer_online' && totalJogadores > 1;
+
   const updates = {
     level,
     current_xp: currentXp,
     total_xp: totalXp,
     next_level_xp: nextLevelXp,
-    games_won: (statsRow.gamesWon || 0) + (ganhouPartida ? 1 : 0),
-    games_lost: (statsRow.gamesLost || 0) + (ganhouPartida ? 0 : 1)
+    games_won: (statsRow.gamesWon || 0) + (isMultiplayerOnlineLobby && ganhouPartida ? 1 : 0),
+    games_lost: (statsRow.gamesLost || 0) + (isMultiplayerOnlineLobby && !ganhouPartida ? 1 : 0)
   };
 
   const { error: updateError } = await supabase.from('stats').update(updates).eq('uid', userId);

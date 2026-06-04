@@ -509,7 +509,7 @@ export default function App() {
               comboMaximo: myPlayer.maxCombo || 0,
               participouAteFinal: true
             });
-            adicionarXP(currentUserId, xpGanho, myPlayer.score, 'multiplayer_online', rank === 1).then(res => {
+            adicionarXP(currentUserId, xpGanho, myPlayer.score, 'multiplayer_online', rank === 1, players.length).then(res => {
               if (res) setLevelUpData(res);
             }).catch(console.error);
           }
@@ -620,7 +620,7 @@ export default function App() {
                     erros: errors,
                     comboMaximo: players[0]?.maxCombo || 0
                   });
-                  adicionarXP(currentUserId, xpGanho, points, isOnlineSolo ? 'solo_online' : 'solo_local', true).then(res => {
+                  adicionarXP(currentUserId, xpGanho, points, isOnlineSolo ? 'solo_online' : 'solo_local', true, 1).then(res => {
                     if (res) setLevelUpData(res);
                   }).catch(console.error);
                 }
