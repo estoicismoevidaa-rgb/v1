@@ -5,15 +5,8 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-async function run() {
-  const userId = 'user_abc123';
-  
-  // Try to upsert profile for a guest
-  const { data: profile, error } = await supabase.from('profiles').upsert([{ 
-    uid: userId, 
-    username: 'Guest Player',
-    updated_at: new Date().toISOString()
-  }]);
-  console.log("GUEST PROFILE UPSERT:", { profile, error });
+async function test() {
+  const { data, error } = await supabase.from('stats').select('uid, total_points, solo_points, profiles(username)').order('total_points', { ascending: false }).limit(2);
+  console.log("Stats from DB directly:", data);
 }
-run();
+test();

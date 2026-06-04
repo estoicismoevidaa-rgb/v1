@@ -216,7 +216,7 @@ export async function updateUserStats(
     };
 
     if (mode === 'solo') {
-      updates.total_points = (currentStats?.total_points || 0) + points;
+      updates.solo_points = (currentStats?.solo_points || 0) + points;
     } else {
       updates.versus_points = (currentStats?.versus_points || 0) + points;
     }
@@ -257,6 +257,8 @@ export async function getRanking(): Promise<RankingEntry[]> {
       .select(`
         uid,
         total_points,
+        solo_points,
+        versus_points,
         games_played,
         best_time_easy,
         profiles (
@@ -274,8 +276,8 @@ export async function getRanking(): Promise<RankingEntry[]> {
       username: row.profiles?.username || 'Anônimo',
       avatarUrl: row.profiles?.avatar_url,
       totalPoints: row.total_points,
-      soloPoints: 0,
-      versusPoints: 0,
+      soloPoints: row.solo_points || 0,
+      versusPoints: row.versus_points || 0,
       bestTimeEasy: row.best_time_easy,
       gamesPlayed: row.games_played
     }));

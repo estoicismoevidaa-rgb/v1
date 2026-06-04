@@ -715,6 +715,7 @@ export async function submitSoloTime(userId: string, username: string, difficult
     uid: userId,
     games_played: (stats?.games_played || 0) + 1,
     total_points: (stats?.total_points || 0) + points,
+    solo_points: (stats?.solo_points || 0) + points,
     last_played_at: new Date().toISOString()
   };
 
@@ -765,9 +766,11 @@ export async function submitOnlineScore(userId: string, points: number, username
     last_played_at: new Date().toISOString()
   };
 
-  // Ignore solo_points and versus_points for now to prevent PGRST204 errors
-  // since the external database doesn't have these columns.
-  updates.total_points = (stats?.total_points || 0) + points;
+  if (isSolo) {
+    updates.solo_points = (stats?.solo_points || 0) + points;
+  } else {
+    updates.versus_points = (stats?.versus_points || 0) + points;
+  }
 
   if (stats && stats.uid) {
     const { error } = await supabase.from('stats').update(updates).eq('uid', userId);
@@ -791,6 +794,8 @@ export async function getGlobalRanking(mode: 'solo' | 'versus' | 'total' = 'solo
     .select(`
       uid,
       total_points,
+      solo_points,
+      versus_points,
       best_time_easy,
       games_played,
       profiles (
@@ -798,7 +803,7 @@ export async function getGlobalRanking(mode: 'solo' | 'versus' | 'total' = 'solo
         avatar_url
       )
     `)
-    .order('total_points', { ascending: false })
+    .order(orderField, { ascending: false })
     .limit(limit);
 
   if (error || !data) {
