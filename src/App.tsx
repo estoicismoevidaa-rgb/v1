@@ -64,6 +64,8 @@ import { BackgroundAnimation } from './components/BackgroundAnimation.tsx';
 import { Timer, Hash, User, Menu } from 'lucide-react';
 
 export default function App() {
+  const [zoom, setZoom] = useState(1);
+  
   // Navigation & Flow
   const [screen, setScreen] = useState('home');
   const [mode, setMode] = useState<'solo' | 'local' | 'online'>('solo');
@@ -794,7 +796,10 @@ export default function App() {
         {/* Placeholder for header if needed */}
       </header>
 
-      <main className="container mx-auto px-4 max-w-5xl relative z-10">
+      <main 
+        className="container mx-auto px-4 max-w-5xl relative z-10 transition-transform duration-300"
+        style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}
+      >
         {screen === 'auth' && (
           <AuthScreen 
             currentUid={currentUserId || getOrCreateUserId()} 
@@ -1003,6 +1008,40 @@ export default function App() {
           setIsPaused(false); 
         }}
       />
+
+      {/* Temporary Zoom Control for Mobile Testing */}
+      <div className="fixed bottom-20 right-4 z-[999] bg-black/80 backdrop-blur-md p-4 rounded-2xl border border-blue-500/30 flex flex-col gap-3 items-center shadow-2xl scale-90 sm:scale-100">
+        <div className="flex flex-col items-center">
+          <span className="text-blue-400 text-[10px] font-black tracking-widest uppercase mb-1">Ajuste de Zoom</span>
+          <span className="text-white text-xl font-black">{Math.round(zoom * 100)}%</span>
+        </div>
+        <input 
+           type="range" 
+           min="0.3" 
+           max="1.2" 
+           step="0.01" 
+           value={zoom} 
+           onChange={(e) => setZoom(parseFloat(e.target.value))}
+           className="w-32 h-1.5 bg-blue-900 rounded-lg appearance-none cursor-pointer accent-blue-500"
+        />
+        <div className="flex gap-4">
+          <button 
+            onClick={() => setZoom(prev => Math.max(0.3, prev - 0.05))}
+            className="text-white bg-blue-600/20 hover:bg-blue-600/40 w-8 h-8 rounded-lg font-black"
+          >-</button>
+          <button 
+            onClick={() => setZoom(1)} 
+            className="text-blue-300 text-[10px] font-bold uppercase tracking-tighter self-center hover:text-white"
+          >Reset</button>
+          <button 
+            onClick={() => setZoom(prev => Math.min(1.2, prev + 0.05))}
+            className="text-white bg-blue-600/20 hover:bg-blue-600/40 w-8 h-8 rounded-lg font-black"
+          >+</button>
+        </div>
+        <p className="text-[8px] text-blue-300/50 text-center max-w-[120px] leading-tight">
+          Use para encontrar o zoom ideal no celular.
+        </p>
+      </div>
     </div>
   );
 }
