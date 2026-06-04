@@ -827,7 +827,7 @@ export default function App() {
         )}
 
         {screen === 'mode-selection' && (
-          <ModeSelection onNavigate={setScreen} onChoice={(m) => {
+          <ModeSelection onNavigate={setScreen} isGuest={userProfile?.isGuest} onChoice={(m) => {
             const isLoggedInUser = userProfile && !userProfile.isGuest;
             if ((m === 'lobby' || m === 'online') && !isLoggedInUser) {
               setScreen('auth');

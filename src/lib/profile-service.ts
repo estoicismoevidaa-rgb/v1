@@ -195,8 +195,11 @@ export async function updateUserStats(
   difficulty: Difficulty, 
   timeInSeconds: number, 
   points: number,
-  mode: 'solo' | 'versus' = 'solo'
+  mode: 'solo' | 'versus' | 'lobby' | 'online' | 'local' = 'solo'
 ): Promise<void> {
+  // BLOQUEIO: Estatísticas e ranking apenas para usuários logados em modos ONLINE
+  if (uid.startsWith('user_') || mode === 'solo' || mode === 'local') return;
+
   try {
     // First get current stats to compare best times
     const { data: currentStats, error: fetchError } = await supabase
@@ -221,7 +224,7 @@ export async function updateUserStats(
       last_played_at: new Date().toISOString()
     };
 
-    if (mode === 'solo') {
+    if (mode === 'lobby') {
       updates.solo_points = (currentStats?.solo_points || 0) + points;
     } else {
       updates.versus_points = (currentStats?.versus_points || 0) + points;

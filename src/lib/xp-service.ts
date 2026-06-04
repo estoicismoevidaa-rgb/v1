@@ -108,6 +108,9 @@ export async function adicionarXP(
 ) {
   if (userId.startsWith('user_')) return null; // Ignore guests
   
+  // BLOQUEIO: Só ganha XP nos modos Online (Lobby ou Versus/Online)
+  if (modo === 'solo' || modo === 'local' || modo === 'solo_local') return null;
+  
   // Get current stats if not provided
   let statsRow = currentStats;
   if (!statsRow) {
