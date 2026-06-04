@@ -477,7 +477,8 @@ export default function App() {
         const sorted = [...players].sort((a, b) => b.score - a.score);
         const rank = sorted.findIndex(p => p.uid === currentUserId) + 1;
         const breakdown = calculateOnlineRankingPoints(rank, players.length, myPlayer.score, myPlayer.maxCombo);
-        submitOnlineScore(currentUserId, breakdown.totalPoints, myPlayer.name).catch(console.error);
+        const isSolo = players.length === 1;
+        submitOnlineScore(currentUserId, breakdown.totalPoints, myPlayer.name, isSolo).catch(console.error);
       }
     }
   }, [gameStatus, scoreSubmitted, mode, currentUserId, players]);
