@@ -57,6 +57,8 @@ import { Ranking } from './components/Ranking.tsx';
 import { PauseMenu } from './components/PauseMenu.tsx';
 import { AuthScreen } from './components/AuthScreen.tsx';
 import { Lobby } from './components/Lobby.tsx';
+import { LevelUpPopup } from './components/LevelUpPopup.tsx';
+import { motion, AnimatePresence } from 'motion/react';
 
 import { BackgroundAnimation } from './components/BackgroundAnimation.tsx';
 
@@ -117,6 +119,7 @@ export default function App() {
   const [rankingMode, setRankingMode] = useState<'solo' | 'versus' | 'total'>('total');
   const [loadingGlobal, setLoadingGlobal] = useState(false);
   const [levelUpData, setLevelUpData] = useState<any | null>(null);
+  const [showLevelUpPopup, setShowLevelUpPopup] = useState(false);
 
   // Refs
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -523,7 +526,10 @@ export default function App() {
               participouAteFinal: true
             });
             adicionarXP(currentUserId, xpGanho, myPlayer.score, 'multiplayer_online', rank === 1, players.length).then(res => {
-              if (res) setLevelUpData(res);
+              if (res) {
+                setLevelUpData(res);
+                if (res.leveledUp) setShowLevelUpPopup(true);
+              }
             }).catch(console.error);
           }
         }
@@ -637,7 +643,10 @@ export default function App() {
                     comboMaximo: players[0]?.maxCombo || 0
                   });
                   adicionarXP(currentUserId, xpGanho, points, isOnlineSolo ? 'solo_online' : 'solo_local', true, 1).then(res => {
-                    if (res) setLevelUpData(res);
+                    if (res) {
+                      setLevelUpData(res);
+                      if (res.leveledUp) setShowLevelUpPopup(true);
+                    }
                   }).catch(console.error);
                 }
               }
@@ -1015,6 +1024,15 @@ export default function App() {
         )}
       </main>
 
+      <AnimatePresence>
+        {showLevelUpPopup && levelUpData && (
+          <LevelUpPopup 
+            level={levelUpData.level} 
+            onClose={() => setShowLevelUpPopup(false)} 
+          />
+        )}
+      </AnimatePresence>
+      
       <PauseMenu 
         isOpen={isPaused}
         onClose={() => setIsPaused(false)}
