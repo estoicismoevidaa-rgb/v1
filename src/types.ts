@@ -20,6 +20,8 @@ export interface Player {
   isOnline?: boolean;
   maxCombo?: number;
   currentCombo?: number;
+  avatarUrl?: string;
+  equippedFrame?: string;
 }
 
 export interface UserProfile {
@@ -29,6 +31,7 @@ export interface UserProfile {
   createdAt: string;
   avatarUrl?: string;
   isGuest?: boolean;
+  equipped_frame?: string;
 }
 
 export interface UserStats {
@@ -61,6 +64,7 @@ export interface RankingEntry {
   bestTimeEasy?: number;
   gamesPlayed: number;
   level?: number;
+  equippedFrame?: string;
 }
 
 export type GameStatus = 'waiting' | 'playing' | 'finished';

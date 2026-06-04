@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { UserStats } from '../types';
+import { verificarRecompensasDeNivel, getPlayerRewards } from './rewards-service';
 
 export function calcularXPParaProximoLevel(level: number): number {
   return Math.floor(100 * Math.pow(1.25, level - 1));
@@ -187,12 +188,19 @@ export async function adicionarXP(
     }
   }
 
+  let recompensasDesbloqueadasNesteMomento: any[] = [];
+  if (leveledUp) {
+    const existingRewards = await getPlayerRewards(userId);
+    recompensasDesbloqueadasNesteMomento = await verificarRecompensasDeNivel(userId, level, existingRewards);
+  }
+
   return {
     leveledUp,
     levelAntes,
     level,
     xpAtual: currentXp,
     xpParaProximoLevel: nextLevelXp,
-    xpGanho
+    xpGanho,
+    novasConquistas: recompensasDesbloqueadasNesteMomento
   };
 }

@@ -13,10 +13,13 @@ import {
   Loader2, 
   Trophy,
   Swords,
-  Gamepad2
+  Gamepad2,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import { GameSettings, UserProfile, UserStats } from '../types.ts';
 import { supabase } from '../lib/supabase.ts';
+import { levelRewards, getPlayerRewards, equiparMoldura, marcarRecompensaComoVista } from '../lib/rewards-service.ts';
 
 interface SettingsProps {
   settings: GameSettings;
@@ -40,6 +43,7 @@ export function Settings({
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
+  const [myRewards, setMyRewards] = useState<any[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -67,6 +71,14 @@ export function Settings({
               gamesLost: data.games_lost || 0,
             });
           }
+        });
+        
+        getPlayerRewards(userProfile.uid).then(res => {
+          setMyRewards(res);
+          // Mark all as seen when opening
+          res.forEach(r => {
+             if (!r.seen) marcarRecompensaComoVista(userProfile.uid, r.id);
+          });
         });
       }
     }
@@ -314,6 +326,88 @@ export function Settings({
             </div>
           )}
         </form>
+
+        {/* Divider */}
+        <div className="h-0.5 bg-blue-900/40 w-full" />
+
+        {/* Conquistas de Nível */}
+        {!userProfile?.isGuest && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="p-1 rounded bg-yellow-500/20 text-yellow-400">
+              <Trophy className="w-4 h-4" />
+            </div>
+            <h3 className="font-black text-lg text-yellow-400 uppercase tracking-widest">Conquistas de Nível</h3>
+          </div>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+             {levelRewards.map(reward => {
+                const unlockedData = myRewards.find(r => r.reward_id === reward.id);
+                const isUnlocked = !!unlockedData;
+                const isEquipped = unlockedData?.equipped || userProfile?.equipped_frame === reward.id;
+                
+                return (
+                  <div key={reward.id} className={`p-3 rounded-2xl border-2 flex flex-col items-center text-center relative overflow-hidden ${
+                    isUnlocked 
+                      ? isEquipped ? 'bg-green-900/20 border-green-500/60 shadow-[0_0_15px_rgba(34,197,94,0.2)]' : 'bg-[#002855]/60 border-blue-500/40' 
+                      : 'bg-black/40 border-slate-700/50 opacity-60 grayscale'
+                  }`}>
+                    {unlockedData && !unlockedData.seen && (
+                      <span className="absolute top-2 right-2 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase z-10 animate-pulse">Novo</span>
+                    )}
+                    
+                    <div className="relative w-12 h-12 rounded-full border-2 border-slate-600 bg-slate-800 flex items-center justify-center mb-2">
+                       {isUnlocked ? (
+                          <div className={`w-full h-full rounded-full border-2 ${
+                            reward.color === 'bronze' ? 'border-[#cd7f32]' :
+                            reward.color === 'silver' ? 'border-[#C0C0C0]' :
+                            reward.color === 'gold' ? 'border-[#FFD700]' :
+                            reward.color === 'diamond' ? 'border-[#00FFFF]' :
+                            reward.color === 'purple' ? 'border-[#a855f7]' :
+                            reward.color === 'red_gold' ? 'border-[#ef4444]' :
+                            reward.color === 'green_neon' ? 'border-[#39ff14]' :
+                            reward.color === 'blue_purple' ? 'border-[#6366f1]' :
+                            reward.color === 'white_silver' ? 'border-[#ffffff]' :
+                            'border-[#f59e0b]'
+                          } flex items-center justify-center`}>
+                            <User className="w-5 h-5 text-slate-400" />
+                          </div>
+                       ) : (
+                          <Lock className="w-5 h-5 text-slate-500" />
+                       )}
+                    </div>
+                    
+                    <p className="font-black text-[10px] text-white uppercase tracking-tighter mb-1 leading-tight">{reward.name}</p>
+                    <p className="text-[8px] text-blue-300/60 font-bold mb-2">Lv {reward.requiredLevel}</p>
+                    
+                    {isUnlocked ? (
+                      <button 
+                        onClick={async () => {
+                          if (userProfile.uid && !isEquipped) {
+                             await equiparMoldura(userProfile.uid, reward.id);
+                             // Update local state easily
+                             setMyRewards(prev => prev.map(r => ({ ...r, equipped: r.reward_id === reward.id })));
+                             if (onUpdateProfile) onUpdateProfile(userProfile.username, userProfile.avatarUrl); // just trigger re-render
+                          }
+                        }}
+                        disabled={isEquipped}
+                        className={`w-full py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest ${
+                          isEquipped ? 'bg-green-500/20 text-green-400' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg'
+                        }`}
+                      >
+                         {isEquipped ? 'Equipada' : 'Equipar'}
+                      </button>
+                    ) : (
+                      <div className="w-full py-1.5 rounded-lg bg-slate-800 text-slate-400 text-[9px] font-black uppercase tracking-widest">
+                         Bloqueada
+                      </div>
+                    )}
+                  </div>
+                )
+             })}
+          </div>
+        </div>
+        )}
 
         {/* Divider */}
         <div className="h-0.5 bg-blue-900/40 w-full" />

@@ -57,6 +57,8 @@ import { Ranking } from './components/Ranking.tsx';
 import { PauseMenu } from './components/PauseMenu.tsx';
 import { AuthScreen } from './components/AuthScreen.tsx';
 import { Lobby } from './components/Lobby.tsx';
+import { RewardPopup } from './components/RewardPopup.tsx';
+import { equiparMoldura } from './lib/rewards-service.ts';
 
 import { BackgroundAnimation } from './components/BackgroundAnimation.tsx';
 
@@ -378,7 +380,14 @@ export default function App() {
       ownerId: currentUserId,
       status: 'waiting',
       difficulty: diff,
-      players: [{ uid: currentUserId, name: nickname, score: 0, isHost: true }],
+      players: [{ 
+        uid: currentUserId, 
+        name: nickname, 
+        score: 0, 
+        isHost: true,
+        avatarUrl: userProfile?.avatarUrl,
+        equippedFrame: userProfile?.equipped_frame
+      }],
       cards: generateCards(diff),
       currentPlayerIndex: 0,
       password: password || undefined,
@@ -438,7 +447,13 @@ export default function App() {
         }
       }
 
-      const newPlayer = { uid: currentUserId, name: nickname, score: 0 };
+      const newPlayer = { 
+        uid: currentUserId, 
+        name: nickname, 
+        score: 0,
+        avatarUrl: userProfile?.avatarUrl,
+        equippedFrame: userProfile?.equipped_frame
+      };
       await joinRoom(roomId, newPlayer);
 
       setOnlineRoom({ ...room, id: roomId });
@@ -775,11 +790,35 @@ export default function App() {
         <div className="flex items-center gap-4">
           {mode !== 'solo' && (
             <div className="hidden sm:flex gap-3">
-              {players.map((p, i) => (
-                <div key={p.uid} className={`px-3 py-1 rounded-lg border ${i === currentPlayerIndex ? 'bg-green-600 border-green-400' : 'bg-blue-950 border-blue-800'}`}>
-                  <span className="text-xs font-bold">{p.name}: {p.score}</span>
+              {players.map((p, i) => {
+                const getFrameBorder = (id?: string) => {
+                  switch(id) {
+                    case 'frame_bronze': return 'border-[#cd7f32]';
+                    case 'frame_silver': return 'border-[#C0C0C0]';
+                    case 'frame_gold': return 'border-[#FFD700]';
+                    case 'frame_diamond': return 'border-[#00FFFF]';
+                    case 'frame_master': return 'border-[#a855f7]';
+                    case 'frame_legendary': return 'border-[#ef4444]';
+                    case 'frame_epic': return 'border-[#39ff14]';
+                    case 'frame_mythic': return 'border-[#6366f1]';
+                    case 'frame_immortal': return 'border-[#ffffff]';
+                    case 'frame_supreme_master': return 'border-[#f59e0b]';
+                    default: return 'border-white/10';
+                  }
+                };
+
+                return (
+                <div key={p.uid} className={`px-3 py-1.5 rounded-lg border flex items-center gap-2 ${i === currentPlayerIndex ? 'bg-green-600 border-green-400' : 'bg-blue-950 border-blue-800'}`}>
+                  {p.avatarUrl || p.equippedFrame ? (
+                    <div className={`w-6 h-6 rounded-full border-[2px] ${getFrameBorder(p.equippedFrame)} p-[1px]`}>
+                      <div className="w-full h-full rounded-full overflow-hidden bg-blue-900/50 flex items-center justify-center">
+                        {p.avatarUrl ? <img src={p.avatarUrl} alt="" className="w-full h-full object-cover" /> : <User className="w-3 h-3 text-blue-300" />}
+                      </div>
+                    </div>
+                  ) : null}
+                  <span className="text-xs font-bold whitespace-nowrap">{p.name}: {p.score}</span>
                 </div>
-              ))}
+              )})}
             </div>
           )}
           <button onClick={() => setIsPaused(true)} className="p-3 bg-blue-700 hover:bg-blue-600 rounded-xl transition-all active:scale-95 shadow-lg">
@@ -925,12 +964,38 @@ export default function App() {
               />
               
               <div className="mt-8 flex justify-center gap-4 sm:hidden overflow-x-auto pb-4 px-2 w-full">
-                {players.map((p, i) => (
-                  <div key={p.uid} className={`flex-shrink-0 px-4 py-2 rounded-xl border ${i === currentPlayerIndex ? 'bg-green-600 border-green-400 text-white' : 'bg-blue-900/40 border-blue-800 text-blue-300'}`}>
-                    <p className="text-[10px] uppercase opacity-60">Score</p>
-                    <p className="font-bold">{p.name}: {p.score}</p>
+                {players.map((p, i) => {
+                  const getFrameBorder = (id?: string) => {
+                    switch(id) {
+                      case 'frame_bronze': return 'border-[#cd7f32]';
+                      case 'frame_silver': return 'border-[#C0C0C0]';
+                      case 'frame_gold': return 'border-[#FFD700]';
+                      case 'frame_diamond': return 'border-[#00FFFF]';
+                      case 'frame_master': return 'border-[#a855f7]';
+                      case 'frame_legendary': return 'border-[#ef4444]';
+                      case 'frame_epic': return 'border-[#39ff14]';
+                      case 'frame_mythic': return 'border-[#6366f1]';
+                      case 'frame_immortal': return 'border-[#ffffff]';
+                      case 'frame_supreme_master': return 'border-[#f59e0b]';
+                      default: return 'border-white/10';
+                    }
+                  };
+
+                  return (
+                  <div key={p.uid} className={`flex-shrink-0 px-4 py-2 rounded-xl border flex flex-col items-center gap-1 ${i === currentPlayerIndex ? 'bg-green-600 border-green-400 text-white' : 'bg-blue-900/40 border-blue-800 text-blue-300'}`}>
+                    {p.avatarUrl || p.equippedFrame ? (
+                      <div className={`w-8 h-8 rounded-full border-[2px] ${getFrameBorder(p.equippedFrame)} p-[1px]`}>
+                        <div className="w-full h-full rounded-full overflow-hidden bg-blue-900/50 flex items-center justify-center">
+                          {p.avatarUrl ? <img src={p.avatarUrl} alt="" className="w-full h-full object-cover" /> : <User className="w-4 h-4 text-blue-300" />}
+                        </div>
+                      </div>
+                    ) : null}
+                    <div className="text-center">
+                      <p className="text-[10px] uppercase opacity-60">Score: {p.score}</p>
+                      <p className="font-bold">{p.name}</p>
+                    </div>
                   </div>
-                ))}
+                )})}
               </div>
             </>
           )
@@ -1008,7 +1073,28 @@ export default function App() {
           setIsPaused(false); 
         }}
       />
-
+      
+      <RewardPopup 
+        rewards={levelUpData?.novasConquistas || []}
+        onClose={() => setLevelUpData(prev => prev ? { ...prev, novasConquistas: [] } : null)}
+        onEquip={async (id) => {
+          if (currentUserId) {
+            await equiparMoldura(currentUserId, id);
+            setUserProfile(prev => {
+              if (prev) {
+                const newProfile = { ...prev, equipped_frame: id };
+                localStorage.setItem(`profile_${currentUserId}`, JSON.stringify(newProfile));
+                return newProfile;
+              }
+              return prev;
+            });
+          }
+        }}
+        onViewProfile={() => {
+          setLevelUpData(prev => prev ? { ...prev, novasConquistas: [] } : null);
+          setScreen('settings');
+        }}
+      />
     </div>
   );
 }
