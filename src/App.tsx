@@ -789,8 +789,7 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen ${settings.theme === 'dark' ? 'bg-[#0a0f1e]' : 'bg-gray-100'} transition-colors font-sans selection:bg-green-500 selection:text-white pb-10 overflow-x-hidden relative`}>
-      {screen === 'home' && <BackgroundAnimation />}
+    <div className="min-h-screen bg-[#000814] transition-colors font-sans selection:bg-green-500 selection:text-white pb-10 overflow-x-hidden relative">
       <header className="py-6 px-4">
         {/* Placeholder for header if needed */}
       </header>
@@ -938,6 +937,7 @@ export default function App() {
             globalRanking={globalRanking}
             loadingGlobal={loadingGlobal}
             mode={rankingMode}
+            userProfile={userProfile}
             onModeChange={setRankingMode}
             onClear={clearRanking} 
             onBack={() => setScreen('home')} 

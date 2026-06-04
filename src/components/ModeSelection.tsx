@@ -41,7 +41,7 @@ export function ModeSelection({ onNavigate, onChoice, isGuest }: ModeSelectionPr
       {/* Header with Back Button */}
       <div className="w-full max-w-lg flex items-center justify-start mt-6 mb-10 z-10">
         <button 
-          onClick={() => onNavigate('menu')} 
+          onClick={() => onNavigate('home')} 
           className="flex items-center gap-2 text-blue-400 font-bold border border-blue-500/30 rounded-xl px-4 py-2 hover:bg-blue-500/10 transition-all group"
         >
           <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> 
