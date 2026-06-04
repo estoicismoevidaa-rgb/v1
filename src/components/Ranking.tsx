@@ -94,22 +94,6 @@ const PodiumCard = ({ entry, rank, mode }: { entry: RankingEntry, rank: 1 | 2 | 
   const points = mode === 'solo' ? entry.soloPoints : mode === 'versus' ? entry.versusPoints : entry.totalPoints;
   const pointsLabel = mode === 'solo' ? 'PONTOS SOLO' : mode === 'versus' ? 'PONTOS VERSUS' : 'PONTOS MUNDIAIS';
 
-  const getFrameStyle = (id?: string) => {
-    switch(id) {
-      case 'frame_bronze': return 'border-[#cd7f32] shadow-[0_0_15px_#cd7f32]';
-      case 'frame_silver': return 'border-[#C0C0C0] shadow-[0_0_15px_#C0C0C0]';
-      case 'frame_gold': return 'border-[#FFD700] shadow-[0_0_20px_#FFD700]';
-      case 'frame_diamond': return 'border-[#00FFFF] shadow-[0_0_20px_#00FFFF]';
-      case 'frame_master': return 'border-[#a855f7] shadow-[0_0_25px_#a855f7]';
-      case 'frame_legendary': return 'border-[#ef4444] shadow-[0_0_25px_#ef4444]';
-      case 'frame_epic': return 'border-[#39ff14] shadow-[0_0_25px_#39ff14]';
-      case 'frame_mythic': return 'border-[#6366f1] shadow-[0_0_30px_#6366f1]';
-      case 'frame_immortal': return 'border-[#ffffff] shadow-[0_0_35px_#ffffff]';
-      case 'frame_supreme_master': return 'border-[#f59e0b] shadow-[0_0_40px_#f59e0b]';
-      default: return config.border;
-    }
-  };
-
   return (
     <motion.div 
       initial={{ y: 50, opacity: 0 }}
@@ -133,7 +117,7 @@ const PodiumCard = ({ entry, rank, mode }: { entry: RankingEntry, rank: 1 | 2 | 
         
         {/* Avatar */}
         <div className={`relative mb-3 group`}>
-          <div className={`w-20 h-20 rounded-full border-[3px] ${getFrameStyle(entry.equippedFrame)} p-1 shadow-inner relative z-10`}>
+          <div className={`w-20 h-20 rounded-full border-2 ${config.border} p-1 shadow-inner relative z-10`}>
             <div className="w-full h-full rounded-full overflow-hidden bg-slate-900 border border-white/10">
                {entry.avatarUrl ? (
                  <img src={entry.avatarUrl} alt={entry.username} className="w-full h-full object-cover" />
@@ -307,28 +291,11 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, userProfi
                     <div className="w-full bg-[#001025]/80 rounded-[2.5rem] border border-blue-500/30 overflow-hidden backdrop-blur-xl shadow-2xl relative mb-12">
                       <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'linear-gradient(to right, #3b82f6 1px, transparent 1px), linear-gradient(to bottom, #3b82f6 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
                       <div className="divide-y divide-blue-500/10 relative z-10">
-                        {remaining.map((entry, i) => {
-                          const getListFrameStyle = (id?: string) => {
-                            switch(id) {
-                              case 'frame_bronze': return 'border-[#cd7f32] shadow-[0_0_10px_#cd7f32]';
-                              case 'frame_silver': return 'border-[#C0C0C0] shadow-[0_0_10px_#C0C0C0]';
-                              case 'frame_gold': return 'border-[#FFD700] shadow-[0_0_10px_#FFD700]';
-                              case 'frame_diamond': return 'border-[#00FFFF] shadow-[0_0_15px_#00FFFF]';
-                              case 'frame_master': return 'border-[#a855f7] shadow-[0_0_15px_#a855f7]';
-                              case 'frame_legendary': return 'border-[#ef4444] shadow-[0_0_15px_#ef4444]';
-                              case 'frame_epic': return 'border-[#39ff14] shadow-[0_0_15px_#39ff14]';
-                              case 'frame_mythic': return 'border-[#6366f1] shadow-[0_0_15px_#6366f1]';
-                              case 'frame_immortal': return 'border-[#ffffff] shadow-[0_0_20px_#ffffff]';
-                              case 'frame_supreme_master': return 'border-[#f59e0b] shadow-[0_0_20px_#f59e0b]';
-                              default: return 'border-blue-500/30';
-                            }
-                          };
-
-                          return (
+                        {remaining.map((entry, i) => (
                           <div key={i} className="flex items-center justify-between p-5 hover:bg-blue-600/5 transition-all group relative">
                             <div className="flex items-center gap-4">
                               <span className="w-8 font-black text-blue-600/50 text-base group-hover:text-blue-400 transition-colors">#{i + 4}</span>
-                              <div className={`w-12 h-12 rounded-full border-[2px] ${getListFrameStyle(entry.equippedFrame)} p-0.5`}>
+                              <div className="w-12 h-12 rounded-full border border-blue-500/30 p-0.5">
                                 <div className="w-full h-full rounded-full overflow-hidden bg-blue-900/20">
                                   {entry.avatarUrl ? (
                                     <img src={entry.avatarUrl} alt={entry.username} className="w-full h-full object-cover" />
@@ -349,7 +316,7 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, userProfi
                               <div className="h-0.5 w-full bg-blue-500/10 rounded-full mt-0.5" />
                             </div>
                           </div>
-                        )})}
+                        ))}
                       </div>
                     </div>
                   )}

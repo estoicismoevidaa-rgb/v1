@@ -12,9 +12,10 @@ interface GameBoardProps {
   difficulty: Difficulty;
   onCardClick: (index: number) => void;
   disabled: boolean;
+  animations: boolean;
 }
 
-export function GameBoard({ cards, difficulty, onCardClick, disabled }: GameBoardProps) {
+export function GameBoard({ cards, difficulty, onCardClick, disabled, animations }: GameBoardProps) {
   const { rows, cols } = DIFFICULTY_CONFIG[difficulty];
 
   // Dynamically calculate grid columns based on difficulty
@@ -36,6 +37,7 @@ export function GameBoard({ cards, difficulty, onCardClick, disabled }: GameBoar
           card={card} 
           onClick={() => onCardClick(index)} 
           disabled={disabled || card.isFlipped || card.isMatched}
+          animations={animations}
         />
       ))}
     </div>

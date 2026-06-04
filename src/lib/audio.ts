@@ -32,9 +32,22 @@ class AudioController {
   }
 
   setMusicEnabled(enabled: boolean) {
-    this.musicEnabled = enabled;
-    // Handle background music if implemented
+    if (this.musicEnabled !== enabled) {
+      this.musicEnabled = enabled;
+      if (enabled) {
+        if (!this.musicAudio) {
+          this.musicAudio = new Audio('https://storage.googleapis.com/shm-public-assets/audio/loop/chill_loop.ogg');
+          this.musicAudio.loop = true;
+          this.musicAudio.volume = 0.3;
+        }
+        this.musicAudio.play().catch(() => {});
+      } else if (this.musicAudio) {
+        this.musicAudio.pause();
+      }
+    }
   }
+
+  private musicAudio?: HTMLAudioElement;
 
   play(sound: keyof typeof this.sounds) {
     if (this.enabled && this.sounds[sound]) {

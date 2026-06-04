@@ -801,8 +801,7 @@ export async function getGlobalRanking(mode: 'solo' | 'versus' | 'total' = 'solo
       level,
       profiles (
         username,
-        avatar_url,
-        equipped_frame
+        avatar_url
       )
     `)
     .order(orderField, { ascending: false })
@@ -817,7 +816,6 @@ export async function getGlobalRanking(mode: 'solo' | 'versus' | 'total' = 'solo
     uid: item.uid,
     username: item.profiles?.username || 'Anônimo',
     avatarUrl: item.profiles?.avatar_url,
-    equippedFrame: item.profiles?.equipped_frame,
     totalPoints: item.total_points,
     soloPoints: item.solo_points || 0,
     versusPoints: item.versus_points || 0,
