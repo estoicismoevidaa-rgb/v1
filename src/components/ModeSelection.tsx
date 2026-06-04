@@ -50,7 +50,7 @@ export function ModeSelection({ onNavigate, onChoice, isGuest }: ModeSelectionPr
       </div>
 
       {/* Central Title with glow effect like in image */}
-      <div className="relative mb-8 sm:mb-12 z-10 max-sm:scale-[0.85]">
+      <div className="relative mb-8 sm:mb-12 z-10">
         <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-48 h-1 bg-blue-500 blur-[2px] opacity-50" />
         <h2 className="text-4xl sm:text-5xl font-black text-center text-white tracking-wider uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
           Escolha o Modo
@@ -58,7 +58,7 @@ export function ModeSelection({ onNavigate, onChoice, isGuest }: ModeSelectionPr
         <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-64 h-0.5 bg-gradient-to-r from-transparent via-blue-500 to-transparent" />
       </div>
 
-      <div className="w-full max-w-lg space-y-4 sm:space-y-6 z-10 max-sm:scale-[0.95] max-sm:origin-top">
+      <div className="w-full max-w-lg space-y-4 sm:space-y-6 z-10">
         {modes.map((mode, index) => (
           <motion.button
             key={mode.id}

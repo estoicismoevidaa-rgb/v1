@@ -64,21 +64,6 @@ import { BackgroundAnimation } from './components/BackgroundAnimation.tsx';
 import { Timer, Hash, User, Menu } from 'lucide-react';
 
 export default function App() {
-  const [zoom, setZoom] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth < 500 ? 0.75 : 1;
-    }
-    return 1;
-  });
-
-  useEffect(() => {
-    const handleResize = () => {
-      setZoom(window.innerWidth < 500 ? 0.75 : 1);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  
   // Navigation & Flow
   const [screen, setScreen] = useState('home');
   const [mode, setMode] = useState<'solo' | 'local' | 'online'>('solo');
@@ -867,8 +852,7 @@ export default function App() {
       </header>
 
       <main 
-        className="container mx-auto px-4 max-w-5xl relative z-10 transition-transform duration-300"
-        style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}
+        className="w-full mx-auto px-2 sm:px-4 max-w-5xl relative z-10 transition-all duration-300"
       >
         {screen === 'auth' && (
           <AuthScreen 

@@ -123,7 +123,7 @@ export function Home({ onNavigate, username, avatarUrl }: HomeProps) {
       <motion.div
         initial={{ y: -30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="text-center mb-6 sm:mb-12 relative z-30 flex flex-col items-center max-sm:scale-[0.85] max-sm:mt-8"
+        className="text-center mb-4 sm:mb-12 relative z-30 flex flex-col items-center mt-12 sm:mt-0"
       >
         {/* Green Neon Apple Logo */}
         <div className="relative mb-6 sm:mb-8 group cursor-default">
@@ -182,7 +182,7 @@ export function Home({ onNavigate, username, avatarUrl }: HomeProps) {
       </motion.div>
 
       {/* Menu Grid - High End Responsive Grid */}
-      <div className="grid grid-cols-2 gap-4 sm:gap-6 w-full max-w-xl relative z-30 mt-0 sm:mt-4 max-sm:scale-[0.9]">
+      <div className="grid grid-cols-2 gap-3 sm:gap-6 w-full max-w-xl relative z-30 mt-4 sm:mt-4">
         <TechButton 
           label="Jogar" 
           icon={<Play fill="currentColor" strokeWidth={0} />} 
