@@ -114,16 +114,16 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeCha
                     {/* 2nd Place (Silver/Blue) */}
                     {podium[1] && (
                       <div className="flex-1 flex flex-col items-center">
-                         <div className="relative mb-2">
+                         <div className="relative mb-2 w-full max-w-[140px]">
                            {/* Shield Border */}
-                           <div className="absolute inset-x-[-15px] inset-y-[-10px] opacity-80">
+                           <div className="absolute inset-0 opacity-80 scale-110">
                              <svg viewBox="0 0 100 120" className="w-full h-full drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]">
-                               <path d="M10 20 L50 5 L90 20 L90 90 L50 115 L10 90 Z" fill="rgba(15, 23, 42, 0.9)" stroke="#3b82f6" strokeWidth="1.5" />
+                               <path d="M10 20 L50 5 L90 20 L90 90 L50 115 L10 90 Z" fill="rgba(15, 23, 42, 0.95)" stroke="#3b82f6" strokeWidth="1.5" />
                              </svg>
                            </div>
                            
-                           <div className="relative z-10 flex flex-col items-center pb-6 pt-4">
-                              <div className="w-16 h-16 rounded-full border-2 border-blue-400 p-0.5 mb-2 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                           <div className="relative z-10 flex flex-col items-center pb-6 pt-5">
+                              <div className="w-16 h-16 rounded-full border-2 border-blue-400 p-0.5 mb-1 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
                                 <div className="w-full h-full rounded-full overflow-hidden bg-slate-800">
                                   {podium[1].avatarUrl ? (
                                     <img src={podium[1].avatarUrl} alt={podium[1].username} className="w-full h-full object-cover" />
@@ -133,14 +133,14 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeCha
                                 </div>
                               </div>
                               
-                              <div className="relative -mt-4 bg-[#1e293b] border-2 border-[#64748b] rounded-lg px-2 text-[10px] font-black z-20 shadow-lg text-white">2</div>
+                              <div className="relative -mt-4 bg-[#1e293b] border-2 border-[#64748b] rounded-lg px-2 py-0.5 text-[10px] font-black z-20 shadow-lg text-white">2</div>
                               
-                              <h3 className="font-black text-xs text-white uppercase mt-4 text-center max-w-[80px] truncate">{podium[1].username}</h3>
-                              <div className="bg-[#1e293b] border border-blue-900 rounded px-1.5 py-0.5 mt-1">
-                                <span className="text-[8px] font-black text-blue-300">LV {podium[1].level || 1}</span>
+                              <h3 className="font-black text-[11px] text-white uppercase mt-4 text-center w-full truncate px-2 leading-tight">NILZA SILVA</h3>
+                              <div className="border border-blue-400/50 rounded-md px-2 py-0.5 mt-1 bg-[#1e293b]">
+                                <span className="text-[10px] font-black text-white">LV {podium[1].level || 1}</span>
                               </div>
-                              <p className="text-2xl font-black text-white mt-1 leading-none shadow-[0_0_8px_rgba(255,255,255,0.2)]">{mode === 'solo' ? podium[1].soloPoints : mode === 'versus' ? podium[1].versusPoints : podium[1].totalPoints}</p>
-                              <p className="text-[7px] font-black text-blue-400 uppercase tracking-widest">Pontos</p>
+                              <p className="text-3xl font-black text-white mt-1 leading-none drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">{mode === 'solo' ? podium[1].soloPoints : mode === 'versus' ? podium[1].versusPoints : podium[1].totalPoints}</p>
+                              <p className="text-[8px] font-black text-blue-400 uppercase tracking-widest mt-1">Pontos</p>
                            </div>
                          </div>
                       </div>
@@ -148,37 +148,37 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeCha
 
                     {/* 1st Place (Gold) */}
                     {podium[0] && (
-                      <div className="flex-[1.2] flex flex-col items-center z-30">
+                      <div className="flex-[1.3] flex flex-col items-center z-30 -mb-6">
                          <div className="mb-2">
-                           <Trophy className="w-12 h-12 text-yellow-400 filter drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]" />
+                           <Trophy className="w-16 h-16 text-yellow-400 filter drop-shadow-[0_0_15px_rgba(250,204,21,0.7)]" />
                          </div>
-                         <div className="relative w-full">
+                         <div className="relative w-full max-w-[200px]">
                            {/* Gold Shield Border */}
-                           <div className="absolute inset-x-[-15px] inset-y-[-20px]">
-                             <svg viewBox="0 0 100 130" className="w-full h-full drop-shadow-[0_0_20px_rgba(250,204,21,0.4)]">
-                               <path d="M5 25 L50 5 L95 25 L95 100 L50 125 L5 100 Z" fill="rgba(15, 23, 42, 0.95)" stroke="#fbbf24" strokeWidth="2" />
+                           <div className="absolute inset-0 scale-[1.2] -translate-y-3">
+                             <svg viewBox="0 0 100 130" className="w-full h-full drop-shadow-[0_0_25px_rgba(250,204,21,0.5)]">
+                               <path d="M5 25 L50 5 L95 25 L95 100 L50 125 L5 100 Z" fill="rgba(15, 23, 42, 0.98)" stroke="#fbbf24" strokeWidth="3" />
                              </svg>
                            </div>
                            
-                           <div className="relative z-10 flex flex-col items-center pb-10 pt-6">
-                              <div className="w-24 h-24 rounded-full border-4 border-yellow-400 p-1 mb-2 shadow-[0_0_20px_rgba(250,204,21,0.4)]">
-                                <div className="w-full h-full rounded-full overflow-hidden bg-slate-800">
+                           <div className="relative z-10 flex flex-col items-center pb-12 pt-8">
+                              <div className="w-28 h-28 rounded-full border-4 border-yellow-400 p-1 mb-1 shadow-[0_0_25px_rgba(250,204,21,0.5)]">
+                                <div className="w-full h-full rounded-full overflow-hidden bg-slate-800 ring-2 ring-yellow-400/20">
                                   {podium[0].avatarUrl ? (
                                     <img src={podium[0].avatarUrl} alt={podium[0].username} className="w-full h-full object-cover" />
                                   ) : (
-                                    <User className="w-12 h-12 text-yellow-400 mx-auto mt-4" />
+                                    <User className="w-14 h-14 text-yellow-400 mx-auto mt-5" />
                                   )}
                                 </div>
                               </div>
                               
-                              <div className="relative -mt-4 bg-[#fab005] border-2 border-yellow-200 rounded-lg px-3 py-0.5 text-xs font-black z-20 shadow-lg text-black">1</div>
+                              <div className="relative -mt-5 bg-[#fab005] border-2 border-yellow-100 rounded-lg px-4 py-1 text-xs font-black z-20 shadow-xl text-black flex items-center justify-center">1</div>
                               
-                              <h3 className="font-black text-base text-yellow-400 uppercase mt-4 text-center max-w-[120px] truncate">{podium[0].username}</h3>
-                              <div className="bg-[#fab005]/20 border border-yellow-500/50 rounded px-2 py-0.5 mt-1">
-                                <span className="text-[9px] font-black text-yellow-100">LV {podium[0].level || 1}</span>
+                              <h3 className="font-black text-sm text-yellow-400 uppercase mt-5 text-center w-full truncate px-4 leading-tight">{podium[0].username}</h3>
+                              <div className="border border-yellow-400/50 rounded-md px-3 py-1 mt-1 bg-yellow-900/40">
+                                <span className="text-[12px] font-black text-white">LV {podium[0].level || 1}</span>
                               </div>
-                              <p className="text-4xl font-black text-yellow-400 mt-2 leading-none">{mode === 'solo' ? podium[0].soloPoints : mode === 'versus' ? podium[0].versusPoints : podium[0].totalPoints}</p>
-                              <p className="text-[8px] font-black text-yellow-600 uppercase tracking-widest">Pontos Mundiais</p>
+                              <p className="text-6xl font-black text-yellow-400 mt-2 leading-none drop-shadow-[0_0_15px_rgba(250,204,21,0.6)] tracking-tighter">{mode === 'solo' ? podium[0].soloPoints : mode === 'versus' ? podium[0].versusPoints : podium[0].totalPoints}</p>
+                              <p className="text-[10px] font-black text-yellow-600 uppercase tracking-[0.2em] mt-1">Pontos Mundiais</p>
                            </div>
                          </div>
                       </div>
@@ -187,16 +187,16 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeCha
                     {/* 3rd Place (Bronze/Orange) */}
                     {podium[2] && (
                       <div className="flex-1 flex flex-col items-center">
-                         <div className="relative mb-2">
+                         <div className="relative mb-2 w-full max-w-[140px]">
                            {/* Shield Border */}
-                           <div className="absolute inset-x-[-15px] inset-y-[-10px] opacity-80">
+                           <div className="absolute inset-x-0 inset-y-0 opacity-80 scale-110">
                              <svg viewBox="0 0 100 120" className="w-full h-full drop-shadow-[0_0_10px_rgba(249,115,22,0.5)]">
-                               <path d="M10 20 L50 5 L90 20 L90 90 L50 115 L10 90 Z" fill="rgba(15, 23, 42, 0.9)" stroke="#f97316" strokeWidth="1.5" />
+                               <path d="M10 20 L50 5 L90 20 L90 90 L50 115 L10 90 Z" fill="rgba(15, 23, 42, 0.95)" stroke="#f97316" strokeWidth="1.5" />
                              </svg>
                            </div>
                            
-                           <div className="relative z-10 flex flex-col items-center pb-6 pt-4">
-                              <div className="w-16 h-16 rounded-full border-2 border-orange-500 p-0.5 mb-2 shadow-[0_0_15px_rgba(249,115,22,0.3)]">
+                           <div className="relative z-10 flex flex-col items-center pb-6 pt-5">
+                              <div className="w-16 h-16 rounded-full border-2 border-orange-500 p-0.5 mb-1 shadow-[0_0_15px_rgba(249,115,22,0.3)]">
                                 <div className="w-full h-full rounded-full overflow-hidden bg-slate-800">
                                   {podium[2].avatarUrl ? (
                                     <img src={podium[2].avatarUrl} alt={podium[2].username} className="w-full h-full object-cover" />
@@ -206,14 +206,14 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeCha
                                 </div>
                               </div>
                               
-                              <div className="relative -mt-4 bg-[#431407] border-2 border-[#b45309] rounded-lg px-2 text-[10px] font-black z-20 shadow-lg text-white">3</div>
+                              <div className="relative -mt-4 bg-[#431407] border-2 border-[#b45309] rounded-lg px-2 py-0.5 text-[10px] font-black z-20 shadow-lg text-white">3</div>
                               
-                              <h3 className="font-black text-xs text-white uppercase mt-4 text-center max-w-[80px] truncate">{podium[2].username}</h3>
-                              <div className="bg-[#431407] border border-orange-900 rounded px-1.5 py-0.5 mt-1">
-                                <span className="text-[8px] font-black text-orange-300">LV {podium[2].level || 1}</span>
+                              <h3 className="font-black text-[11px] text-white uppercase mt-4 text-center w-full truncate px-2 leading-tight">{podium[2].username}</h3>
+                              <div className="border border-orange-400/50 rounded-md px-2 py-0.5 mt-1 bg-[#1e293b]">
+                                <span className="text-[10px] font-black text-white">LV {podium[2].level || 1}</span>
                               </div>
-                              <p className="text-2xl font-black text-orange-500 mt-1 leading-none shadow-[0_0_8px_rgba(249,115,22,0.2)]">{mode === 'solo' ? podium[2].soloPoints : mode === 'versus' ? podium[2].versusPoints : podium[2].totalPoints}</p>
-                              <p className="text-[7px] font-black text-orange-600 uppercase tracking-widest">Pontos</p>
+                              <p className="text-3xl font-black text-orange-500 mt-1 leading-none drop-shadow-[0_0_10px_rgba(249,115,22,0.4)]">{mode === 'solo' ? podium[2].soloPoints : mode === 'versus' ? podium[2].versusPoints : podium[2].totalPoints}</p>
+                              <p className="text-[8px] font-black text-orange-600 uppercase tracking-widest mt-1">Pontos</p>
                            </div>
                          </div>
                       </div>
