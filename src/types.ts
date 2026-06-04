@@ -20,7 +20,6 @@ export interface Player {
   isOnline?: boolean;
   maxCombo?: number;
   currentCombo?: number;
-  avatarUrl?: string;
 }
 
 export interface UserProfile {

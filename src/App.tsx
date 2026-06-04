@@ -57,8 +57,6 @@ import { Ranking } from './components/Ranking.tsx';
 import { PauseMenu } from './components/PauseMenu.tsx';
 import { AuthScreen } from './components/AuthScreen.tsx';
 import { Lobby } from './components/Lobby.tsx';
-import { LevelUpPopup } from './components/LevelUpPopup.tsx';
-import { motion, AnimatePresence } from 'motion/react';
 
 import { BackgroundAnimation } from './components/BackgroundAnimation.tsx';
 
@@ -119,7 +117,6 @@ export default function App() {
   const [rankingMode, setRankingMode] = useState<'solo' | 'versus' | 'total'>('total');
   const [loadingGlobal, setLoadingGlobal] = useState(false);
   const [levelUpData, setLevelUpData] = useState<any | null>(null);
-  const [showLevelUpPopup, setShowLevelUpPopup] = useState(false);
 
   // Refs
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -381,13 +378,7 @@ export default function App() {
       ownerId: currentUserId,
       status: 'waiting',
       difficulty: diff,
-      players: [{ 
-        uid: currentUserId, 
-        name: nickname, 
-        score: 0, 
-        isHost: true,
-        avatarUrl: userProfile?.avatarUrl
-      }],
+      players: [{ uid: currentUserId, name: nickname, score: 0, isHost: true }],
       cards: generateCards(diff),
       currentPlayerIndex: 0,
       password: password || undefined,
@@ -447,12 +438,7 @@ export default function App() {
         }
       }
 
-      const newPlayer = { 
-        uid: currentUserId, 
-        name: nickname, 
-        score: 0,
-        avatarUrl: userProfile?.avatarUrl
-      };
+      const newPlayer = { uid: currentUserId, name: nickname, score: 0 };
       await joinRoom(roomId, newPlayer);
 
       setOnlineRoom({ ...room, id: roomId });
@@ -526,10 +512,7 @@ export default function App() {
               participouAteFinal: true
             });
             adicionarXP(currentUserId, xpGanho, myPlayer.score, 'multiplayer_online', rank === 1, players.length).then(res => {
-              if (res) {
-                setLevelUpData(res);
-                if (res.leveledUp) setShowLevelUpPopup(true);
-              }
+              if (res) setLevelUpData(res);
             }).catch(console.error);
           }
         }
@@ -557,7 +540,6 @@ export default function App() {
     }
 
     audioController.play('flip');
-    if (settings.vibration && navigator.vibrate) navigator.vibrate(30);
     
     const newCards = [...cards];
     newCards[index].isFlipped = true;
@@ -593,10 +575,8 @@ export default function App() {
           
           if (currentP.currentCombo > 1) {
             audioController.play('combo');
-            if (settings.vibration && navigator.vibrate) navigator.vibrate([50, 50, 50]);
           } else {
             audioController.play('match');
-            if (settings.vibration && navigator.vibrate) navigator.vibrate(50);
           }
 
           if (currentP.currentCombo > (currentP.maxCombo || 0)) {
@@ -643,10 +623,7 @@ export default function App() {
                     comboMaximo: players[0]?.maxCombo || 0
                   });
                   adicionarXP(currentUserId, xpGanho, points, isOnlineSolo ? 'solo_online' : 'solo_local', true, 1).then(res => {
-                    if (res) {
-                      setLevelUpData(res);
-                      if (res.leveledUp) setShowLevelUpPopup(true);
-                    }
+                    if (res) setLevelUpData(res);
                   }).catch(console.error);
                 }
               }
@@ -666,7 +643,6 @@ export default function App() {
           }
         } else {
           audioController.play('error');
-          if (settings.vibration && navigator.vibrate) navigator.vibrate(100);
           updatedCards[firstIdx].isFlipped = false;
           updatedCards[secondIdx].isFlipped = false;
           
@@ -770,26 +746,22 @@ export default function App() {
   const renderHUD = () => {
     const currentPlayer = players[currentPlayerIndex];
     return (
-      <div className="flex justify-between items-center bg-[#001025]/90 backdrop-blur-md p-4 rounded-3xl mb-8 border border-blue-900/50 shadow-2xl relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent pointer-events-none" />
-        
+      <div className="flex flex-wrap justify-between items-center gap-4 bg-blue-900/40 p-4 rounded-2xl border border-blue-700 mb-6 backdrop-blur-md sticky top-4 z-40">
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-900 rounded-2xl">
-              <Timer className="w-6 h-6 text-blue-200" />
-            </div>
-            <div>
-              <p className="text-[10px] text-blue-300 uppercase font-bold tracking-wider">Tempo</p>
-              <p className="font-mono text-2xl font-black">{time}s</p>
-            </div>
-          </div>
-          
-          <div className="w-px h-10 bg-blue-900/50 hidden sm:block" />
-
-          {/* Player Turn Indicator */}
-          {mode !== 'solo' && currentPlayer && (
-            <div className="hidden sm:flex items-center gap-3">
-              <div className="p-2 bg-green-900/50 border border-green-500/30 rounded-xl text-green-400">
+          {mode === 'solo' ? (
+            <>
+              <div className="flex items-center gap-2">
+                <Timer className="w-5 h-5 text-green-400" />
+                <span className="font-mono text-xl">{time}s</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Hash className="w-5 h-5 text-blue-400" />
+                <span className="font-bold text-xl">{attempts}</span>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-600 rounded-lg animate-pulse">
                 <User className="w-5 h-5" />
               </div>
               <div>
@@ -828,8 +800,6 @@ export default function App() {
         className="container mx-auto px-4 max-w-5xl relative z-10 transition-transform duration-300"
         style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}
       >
-        {settings.animations && <BackgroundAnimation />}
-        
         {screen === 'auth' && (
           <AuthScreen 
             currentUid={currentUserId || getOrCreateUserId()} 
@@ -952,7 +922,6 @@ export default function App() {
                 difficulty={difficulty} 
                 onCardClick={handleCardClick}
                 disabled={isProcessing || (mode === 'online' && players[currentPlayerIndex]?.uid !== currentUserId)}
-                animations={settings.animations}
               />
               
               <div className="mt-8 flex justify-center gap-4 sm:hidden overflow-x-auto pb-4 px-2 w-full">
@@ -1024,15 +993,6 @@ export default function App() {
         )}
       </main>
 
-      <AnimatePresence>
-        {showLevelUpPopup && levelUpData && (
-          <LevelUpPopup 
-            level={levelUpData.level} 
-            onClose={() => setShowLevelUpPopup(false)} 
-          />
-        )}
-      </AnimatePresence>
-      
       <PauseMenu 
         isOpen={isPaused}
         onClose={() => setIsPaused(false)}
@@ -1048,6 +1008,7 @@ export default function App() {
           setIsPaused(false); 
         }}
       />
+
     </div>
   );
 }

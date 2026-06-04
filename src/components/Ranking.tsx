@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, Trash2, Clock, Swords, Globe, Trophy, User, Medal, Crown, Award, Star } from 'lucide-react';
 import { LocalRanking, RankingEntry } from '../types.ts';
@@ -23,7 +23,7 @@ const TechCorner = ({ className }: { className: string }) => (
   <div className={`absolute w-4 h-4 border-white/20 pointer-events-none ${className}`} />
 );
 
-const Particle = ({ delay = 0 }: { delay?: number; key?: React.Key }) => (
+const Particle = ({ delay = 0 }: { delay?: number }) => (
   <motion.div
     initial={{ y: '100%', x: Math.random() * 100 + '%', opacity: 0 }}
     animate={{ y: '-10%', opacity: [0, 1, 0] }}
