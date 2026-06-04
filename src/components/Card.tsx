@@ -27,12 +27,12 @@ export const Card: React.FC<CardProps> = ({ card, onClick, disabled }) => {
       >
         {/* Front (Hidden) */}
         <div className="absolute inset-0 w-full h-full backface-hidden rounded-xl bg-green-600 border-4 border-green-400 flex items-center justify-center shadow-lg">
-          <span className="text-4xl filter grayscale opacity-20">?</span>
+          <span className="text-6xl filter grayscale opacity-20 font-black">?</span>
         </div>
 
         {/* Back (Visible) */}
         <div className="absolute inset-0 w-full h-full backface-hidden rounded-xl bg-white border-4 border-green-500 flex items-center justify-center shadow-lg rotate-y-180">
-          <span className="text-5xl select-none">{card.fruit}</span>
+          <span className="text-7xl select-none drop-shadow-sm">{card.fruit}</span>
         </div>
         
         {card.isMatched && (
