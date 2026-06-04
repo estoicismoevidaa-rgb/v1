@@ -26,58 +26,69 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeCha
   const remaining = filteredRanking.slice(3);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] p-4 text-white">
-      <div className="w-full max-w-4xl">
+    <div className="flex flex-col items-center min-h-screen p-4 text-white bg-[#000814]">
+      <div className="w-full max-w-lg mb-4">
         <button 
           onClick={onBack} 
-          className="mb-8 flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors font-bold px-4 py-2 bg-blue-900/30 rounded-xl"
+          className="flex items-center gap-1 text-[#4285f4] font-bold border border-[#4285f4]/50 rounded-xl px-4 py-1.5 hover:bg-[#4285f4]/10 transition-all"
         >
           <ChevronLeft className="w-5 h-5" /> Voltar ao Menu
         </button>
+      </div>
 
-        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
-          <div>
-            <h1 className="text-5xl font-black italic tracking-tighter mb-2">RANKING</h1>
-            <p className="text-blue-400 font-medium uppercase tracking-widest text-xs">Os melhores mestres da memória</p>
+      <div className="w-full max-w-xl text-center mb-10">
+        <h1 className="text-7xl font-black italic tracking-tighter mb-1 text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">RANKING</h1>
+        <p className="text-blue-400 font-bold uppercase tracking-[0.2em] text-xs">Os melhores mestres da memória</p>
+      </div>
+
+      <div className="w-full max-w-lg space-y-6">
+        {/* Mode Selector */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex items-center gap-2 text-[10px] font-black text-blue-500 uppercase tracking-widest">
+            <div className="h-0.5 w-8 bg-blue-900" />
+            MODO DE RANKING
+            <div className="h-0.5 w-8 bg-blue-900" />
           </div>
-          
-          <div className="flex flex-col items-end gap-3">
-            <p className="text-[10px] text-blue-500 font-black uppercase tracking-tighter mr-2">MODO DE RANKING</p>
-            <div className="flex bg-blue-900/40 p-1.5 rounded-2xl border border-blue-800 shadow-2xl backdrop-blur-xl">
-              <button 
-                onClick={() => onModeChange('total')}
-                className={`px-6 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-2 ${mode === 'total' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-blue-400 hover:text-white'}`}
-              >
-                <Trophy className="w-4 h-4" /> GERAL
-              </button>
-              <button 
-                onClick={() => onModeChange('solo')}
-                className={`px-6 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-2 ${mode === 'solo' ? 'bg-green-600 text-white shadow-lg shadow-green-600/20' : 'text-blue-400 hover:text-white'}`}
-              >
-                <User className="w-4 h-4" /> SOLO
-              </button>
-              <button 
-                onClick={() => onModeChange('versus')}
-                className={`px-6 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-2 ${mode === 'versus' ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20' : 'text-blue-400 hover:text-white'}`}
-              >
-                <Swords className="w-4 h-4" /> VERSUS
-              </button>
-            </div>
+          <div className="w-full grid grid-cols-3 bg-[#001d3d]/60 p-1.5 rounded-2xl border border-blue-900 shadow-2xl">
+            <button 
+              onClick={() => onModeChange('total')}
+              className={`flex items-center justify-center gap-2 py-3 rounded-xl font-black text-xs transition-all ${mode === 'total' ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.6)]' : 'text-blue-400'}`}
+            >
+              <Trophy className="w-4 h-4" /> GERAL
+            </button>
+            <button 
+              onClick={() => onModeChange('solo')}
+              className={`flex items-center justify-center gap-2 py-3 rounded-xl font-black text-xs transition-all ${mode === 'solo' ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.6)]' : 'text-blue-400'}`}
+            >
+              <User className="w-4 h-4" /> SOLO
+            </button>
+            <button 
+              onClick={() => onModeChange('versus')}
+              className={`flex items-center justify-center gap-2 py-3 rounded-xl font-black text-xs transition-all ${mode === 'versus' ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.6)]' : 'text-blue-400'}`}
+            >
+              <Swords className="w-4 h-4" /> VERSUS
+            </button>
+          </div>
 
-            <div className="flex bg-blue-950/80 p-1.5 rounded-2xl border border-blue-800 shadow-2xl backdrop-blur-xl">
-              <button 
-                onClick={() => setTab('global')}
-                className={`px-6 py-2.5 rounded-xl font-black text-sm transition-all flex items-center gap-2 ${tab === 'global' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-400 hover:text-white'}`}
-              >
-                <Globe className="w-4 h-4" /> GLOBAL
-              </button>
-              <button 
-                onClick={() => setTab('local')}
-                className={`px-6 py-2.5 rounded-xl font-black text-sm transition-all flex items-center gap-2 ${tab === 'local' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-400 hover:text-white'}`}
-              >
-                <Users className="w-4 h-4" /> LOCAL
-              </button>
-            </div>
+          <div className="w-full grid grid-cols-2 max-w-[280px] bg-[#001d3d]/40 p-1 rounded-2xl border border-blue-900">
+            <button 
+              onClick={() => setTab('global')}
+              className={`flex items-center justify-center gap-2 py-2 rounded-xl font-black text-xs transition-all ${tab === 'global' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-400'}`}
+            >
+              <Globe className="w-4 h-4" /> GLOBAL
+            </button>
+            <button 
+              onClick={() => setTab('local')}
+              className={`flex items-center justify-center gap-2 py-2 rounded-xl font-black text-xs transition-all ${tab === 'local' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-400'}`}
+            >
+              <div className="bg-blue-400/20 p-0.5 rounded">
+                 <svg className="w-3 h-3 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                   <circle cx="12" cy="10" r="3" />
+                 </svg>
+              </div>
+              LOCAL
+            </button>
           </div>
         </div>
 
@@ -88,7 +99,7 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeCha
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-12"
+              className="py-10"
             >
               {loadingGlobal ? (
                 <div className="py-20 text-center">
@@ -97,124 +108,154 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeCha
                 </div>
               ) : filteredRanking.length > 0 ? (
                 <>
-                  {/* Podium */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-                    {/* 2nd Place */}
+                  {/* Podium Styling from Screenshot */}
+                  <div className="flex items-end justify-center gap-2 relative">
+                    
+                    {/* 2nd Place (Silver/Blue) */}
                     {podium[1] && (
-                      <div className="order-2 md:order-1">
-                        <div className="flex flex-col items-center">
-                          <div className="relative mb-4">
-                            <div className="w-20 h-20 rounded-full border-4 border-slate-400 bg-slate-800 flex items-center justify-center overflow-hidden shadow-2xl">
-                              {podium[1].avatarUrl ? (
-                                <img src={podium[1].avatarUrl} alt={podium[1].username} className="w-full h-full object-cover" />
-                              ) : (
-                                <User className="w-10 h-10 text-slate-400" />
-                              )}
-                            </div>
-                            <div className="absolute -bottom-2 -right-2 bg-slate-400 text-black w-8 h-8 rounded-full flex items-center justify-center font-black shadow-lg">2</div>
-                          </div>
-                          <div className="bg-slate-400/10 border border-slate-400/20 p-6 rounded-[2rem] w-full text-center">
-                            <h3 className="font-black text-xl mb-1 truncate px-2">{podium[1].username}</h3>
-                            <div className="flex justify-center mb-1">
-                              <span className="px-2 py-0.5 bg-slate-600 rounded text-[10px] font-black uppercase tracking-widest text-slate-200">LV {podium[1].level || 1}</span>
-                            </div>
-                            <p className="text-slate-400 font-black text-2xl">
-                              {mode === 'solo' ? podium[1].soloPoints : mode === 'versus' ? podium[1].versusPoints : podium[1].totalPoints}
-                            </p>
-                            <p className="text-[10px] uppercase font-bold text-slate-500 tracking-widest mt-1">Pontos</p>
-                          </div>
-                        </div>
+                      <div className="flex-1 flex flex-col items-center">
+                         <div className="relative mb-2">
+                           {/* Shield Border */}
+                           <div className="absolute inset-x-[-15px] inset-y-[-10px] opacity-80">
+                             <svg viewBox="0 0 100 120" className="w-full h-full drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]">
+                               <path d="M10 20 L50 5 L90 20 L90 90 L50 115 L10 90 Z" fill="rgba(15, 23, 42, 0.9)" stroke="#3b82f6" strokeWidth="1.5" />
+                             </svg>
+                           </div>
+                           
+                           <div className="relative z-10 flex flex-col items-center pb-6 pt-4">
+                              <div className="w-16 h-16 rounded-full border-2 border-blue-400 p-0.5 mb-2 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                                <div className="w-full h-full rounded-full overflow-hidden bg-slate-800">
+                                  {podium[1].avatarUrl ? (
+                                    <img src={podium[1].avatarUrl} alt={podium[1].username} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <User className="w-8 h-8 text-blue-400 mx-auto mt-3" />
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="relative -mt-4 bg-[#1e293b] border-2 border-[#64748b] rounded-lg px-2 text-[10px] font-black z-20 shadow-lg text-white">2</div>
+                              
+                              <h3 className="font-black text-xs text-white uppercase mt-4 text-center max-w-[80px] truncate">{podium[1].username}</h3>
+                              <div className="bg-[#1e293b] border border-blue-900 rounded px-1.5 py-0.5 mt-1">
+                                <span className="text-[8px] font-black text-blue-300">LV {podium[1].level || 1}</span>
+                              </div>
+                              <p className="text-2xl font-black text-white mt-1 leading-none shadow-[0_0_8px_rgba(255,255,255,0.2)]">{mode === 'solo' ? podium[1].soloPoints : mode === 'versus' ? podium[1].versusPoints : podium[1].totalPoints}</p>
+                              <p className="text-[7px] font-black text-blue-400 uppercase tracking-widest">Pontos</p>
+                           </div>
+                         </div>
                       </div>
                     )}
 
-                    {/* 1st Place */}
+                    {/* 1st Place (Gold) */}
                     {podium[0] && (
-                      <div className="order-1 md:order-2">
-                        <div className="flex flex-col items-center">
-                          <Trophy className="w-12 h-12 text-yellow-400 mb-4 animate-bounce" />
-                          <div className="relative mb-6">
-                            <div className="w-28 h-28 rounded-full border-4 border-yellow-400 bg-slate-800 flex items-center justify-center overflow-hidden shadow-[0_0_50px_rgba(250,204,21,0.3)]">
-                              {podium[0].avatarUrl ? (
-                                <img src={podium[0].avatarUrl} alt={podium[0].username} className="w-full h-full object-cover" />
-                              ) : (
-                                <User className="w-16 h-16 text-yellow-400" />
-                              )}
-                            </div>
-                            <div className="absolute -bottom-2 -right-2 bg-yellow-400 text-black w-10 h-10 rounded-full flex items-center justify-center font-black text-xl shadow-lg ring-4 ring-blue-950">1</div>
-                          </div>
-                          <div className="bg-yellow-400/10 border-2 border-yellow-400/30 p-8 rounded-[2.5rem] w-full text-center scale-110">
-                            <h3 className="font-black text-2xl mb-1 truncate px-2 text-yellow-400">{podium[0].username}</h3>
-                            <div className="flex justify-center mb-2">
-                              <span className="px-2 py-0.5 bg-yellow-600 rounded text-[11px] font-black uppercase tracking-widest text-yellow-100 italic">LV {podium[0].level || 1}</span>
-                            </div>
-                            <p className="text-yellow-400 font-black text-4xl">
-                              {mode === 'solo' ? podium[0].soloPoints : mode === 'versus' ? podium[0].versusPoints : podium[0].totalPoints}
-                            </p>
-                            <p className="text-[10px] uppercase font-bold text-yellow-500/60 tracking-widest mt-1">Pontos Mundiais</p>
-                          </div>
-                        </div>
+                      <div className="flex-[1.2] flex flex-col items-center z-30">
+                         <div className="mb-2">
+                           <Trophy className="w-12 h-12 text-yellow-400 filter drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]" />
+                         </div>
+                         <div className="relative w-full">
+                           {/* Gold Shield Border */}
+                           <div className="absolute inset-x-[-15px] inset-y-[-20px]">
+                             <svg viewBox="0 0 100 130" className="w-full h-full drop-shadow-[0_0_20px_rgba(250,204,21,0.4)]">
+                               <path d="M5 25 L50 5 L95 25 L95 100 L50 125 L5 100 Z" fill="rgba(15, 23, 42, 0.95)" stroke="#fbbf24" strokeWidth="2" />
+                             </svg>
+                           </div>
+                           
+                           <div className="relative z-10 flex flex-col items-center pb-10 pt-6">
+                              <div className="w-24 h-24 rounded-full border-4 border-yellow-400 p-1 mb-2 shadow-[0_0_20px_rgba(250,204,21,0.4)]">
+                                <div className="w-full h-full rounded-full overflow-hidden bg-slate-800">
+                                  {podium[0].avatarUrl ? (
+                                    <img src={podium[0].avatarUrl} alt={podium[0].username} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <User className="w-12 h-12 text-yellow-400 mx-auto mt-4" />
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="relative -mt-4 bg-[#fab005] border-2 border-yellow-200 rounded-lg px-3 py-0.5 text-xs font-black z-20 shadow-lg text-black">1</div>
+                              
+                              <h3 className="font-black text-base text-yellow-400 uppercase mt-4 text-center max-w-[120px] truncate">{podium[0].username}</h3>
+                              <div className="bg-[#fab005]/20 border border-yellow-500/50 rounded px-2 py-0.5 mt-1">
+                                <span className="text-[9px] font-black text-yellow-100">LV {podium[0].level || 1}</span>
+                              </div>
+                              <p className="text-4xl font-black text-yellow-400 mt-2 leading-none">{mode === 'solo' ? podium[0].soloPoints : mode === 'versus' ? podium[0].versusPoints : podium[0].totalPoints}</p>
+                              <p className="text-[8px] font-black text-yellow-600 uppercase tracking-widest">Pontos Mundiais</p>
+                           </div>
+                         </div>
                       </div>
                     )}
 
-                    {/* 3rd Place */}
+                    {/* 3rd Place (Bronze/Orange) */}
                     {podium[2] && (
-                      <div className="order-3">
-                        <div className="flex flex-col items-center">
-                          <div className="relative mb-4">
-                            <div className="w-20 h-20 rounded-full border-4 border-orange-600 bg-slate-800 flex items-center justify-center overflow-hidden shadow-2xl">
-                              {podium[2].avatarUrl ? (
-                                <img src={podium[2].avatarUrl} alt={podium[2].username} className="w-full h-full object-cover" />
-                              ) : (
-                                <User className="w-10 h-10 text-orange-600" />
-                              )}
-                            </div>
-                            <div className="absolute -bottom-2 -right-2 bg-orange-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-black shadow-lg">3</div>
-                          </div>
-                          <div className="bg-orange-600/10 border border-orange-600/20 p-6 rounded-[2rem] w-full text-center">
-                            <h3 className="font-black text-xl mb-1 truncate px-2">{podium[2].username}</h3>
-                            <div className="flex justify-center mb-1">
-                              <span className="px-2 py-0.5 bg-orange-800 rounded text-[10px] font-black uppercase tracking-widest text-orange-200">LV {podium[2].level || 1}</span>
-                            </div>
-                            <p className="text-orange-600 font-black text-2xl">
-                              {mode === 'solo' ? podium[2].soloPoints : mode === 'versus' ? podium[2].versusPoints : podium[2].totalPoints}
-                            </p>
-                            <p className="text-[10px] uppercase font-bold text-orange-600/50 tracking-widest mt-1">Pontos</p>
-                          </div>
-                        </div>
+                      <div className="flex-1 flex flex-col items-center">
+                         <div className="relative mb-2">
+                           {/* Shield Border */}
+                           <div className="absolute inset-x-[-15px] inset-y-[-10px] opacity-80">
+                             <svg viewBox="0 0 100 120" className="w-full h-full drop-shadow-[0_0_10px_rgba(249,115,22,0.5)]">
+                               <path d="M10 20 L50 5 L90 20 L90 90 L50 115 L10 90 Z" fill="rgba(15, 23, 42, 0.9)" stroke="#f97316" strokeWidth="1.5" />
+                             </svg>
+                           </div>
+                           
+                           <div className="relative z-10 flex flex-col items-center pb-6 pt-4">
+                              <div className="w-16 h-16 rounded-full border-2 border-orange-500 p-0.5 mb-2 shadow-[0_0_15px_rgba(249,115,22,0.3)]">
+                                <div className="w-full h-full rounded-full overflow-hidden bg-slate-800">
+                                  {podium[2].avatarUrl ? (
+                                    <img src={podium[2].avatarUrl} alt={podium[2].username} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <User className="w-8 h-8 text-orange-500 mx-auto mt-3" />
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="relative -mt-4 bg-[#431407] border-2 border-[#b45309] rounded-lg px-2 text-[10px] font-black z-20 shadow-lg text-white">3</div>
+                              
+                              <h3 className="font-black text-xs text-white uppercase mt-4 text-center max-w-[80px] truncate">{podium[2].username}</h3>
+                              <div className="bg-[#431407] border border-orange-900 rounded px-1.5 py-0.5 mt-1">
+                                <span className="text-[8px] font-black text-orange-300">LV {podium[2].level || 1}</span>
+                              </div>
+                              <p className="text-2xl font-black text-orange-500 mt-1 leading-none shadow-[0_0_8px_rgba(249,115,22,0.2)]">{mode === 'solo' ? podium[2].soloPoints : mode === 'versus' ? podium[2].versusPoints : podium[2].totalPoints}</p>
+                              <p className="text-[7px] font-black text-orange-600 uppercase tracking-widest">Pontos</p>
+                           </div>
+                         </div>
                       </div>
                     )}
+
+                    {/* Perspective Floor Effect */}
+                    <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-[120%] h-20 bg-gradient-to-t from-blue-900/20 to-transparent rounded-full blur-xl -z-10" />
+                    <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-full h-[2px] bg-blue-600/30 -z-10" />
                   </div>
 
                   {/* List for 4+ */}
                   {remaining.length > 0 && (
-                    <div className="bg-blue-950/40 rounded-[2.5rem] border border-blue-900 overflow-hidden">
-                      <div className="p-4 bg-blue-900/40 border-b border-blue-800 flex justify-between text-[10px] uppercase font-black tracking-widest text-blue-400">
-                        <span>Posição & Nome</span>
-                        <span>Pontuação</span>
+                    <div className="mt-16 bg-[#001d3d]/40 rounded-3xl border border-blue-900/50 overflow-hidden backdrop-blur-sm">
+                      <div className="p-4 bg-blue-900/20 border-b border-blue-800/50 flex justify-between text-[10px] uppercase font-black tracking-widest text-blue-500">
+                        <span>Classificação</span>
+                        <span>Detalhes da Pontuação</span>
                       </div>
-                      <div className="divide-y divide-blue-900">
+                      <div className="divide-y divide-blue-900/30">
                         {remaining.map((entry, i) => (
-                          <div key={i} className="flex items-center justify-between p-5 hover:bg-blue-600/10 transition-colors">
+                          <div key={i} className="flex items-center justify-between p-4 hover:bg-blue-600/10 transition-colors">
                             <div className="flex items-center gap-4">
                               <span className="w-8 font-black text-blue-600 text-lg">#{i + 4}</span>
-                              <div className="w-10 h-10 rounded-full bg-blue-900 flex items-center justify-center border border-blue-700 overflow-hidden">
-                                {entry.avatarUrl ? (
-                                  <img src={entry.avatarUrl} alt={entry.username} className="w-full h-full object-cover" />
-                                ) : (
-                                  <User className="w-5 h-5 text-blue-400" />
-                                )}
+                              <div className="w-10 h-10 rounded-full bg-blue-900/50 p-0.5 border border-blue-700/50">
+                                <div className="w-full h-full rounded-full overflow-hidden">
+                                  {entry.avatarUrl ? (
+                                    <img src={entry.avatarUrl} alt={entry.username} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <User className="w-5 h-5 text-blue-400 mx-auto mt-2" />
+                                  )}
+                                </div>
                               </div>
                               <div className="flex flex-col">
-                                <span className="font-bold text-lg">{entry.username}</span>
-                                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Nível {entry.level || 1}</span>
+                                <span className="font-bold text-sm text-white">{entry.username}</span>
+                                <span className="text-[9px] font-black text-green-400 uppercase tracking-tighter">Nível {entry.level || 1}</span>
                               </div>
                             </div>
                             <div className="text-right">
-                              <span className="font-black text-xl text-blue-200">
+                              <span className="font-black text-xl text-blue-100">
                                 {mode === 'solo' ? entry.soloPoints : mode === 'versus' ? entry.versusPoints : entry.totalPoints}
                               </span>
-                              <span className="block text-[8px] uppercase tracking-widest text-blue-500 font-bold">
-                                {mode === 'solo' ? 'Recorde Solo' : mode === 'versus' ? 'Pontos Versus' : 'Pontos Totais'}
+                              <span className="block text-[7px] uppercase tracking-[0.2em] text-blue-500 font-black">
+                                {mode === 'solo' ? 'Recorde Global' : mode === 'versus' ? 'Pontos Versus' : 'Rank Internacional'}
                               </span>
                             </div>
                           </div>
@@ -236,38 +277,38 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeCha
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-8"
+              className="py-6 space-y-8"
             >
               <div className="flex justify-end">
                 <button onClick={onClear} className="flex items-center gap-2 text-red-500 hover:text-red-400 transition-colors text-xs font-black uppercase tracking-widest px-4 py-2 bg-red-500/10 rounded-xl border border-red-500/20">
-                  <Trash2 className="w-4 h-4" /> Limpar Tudo
+                  <Trash2 className="w-4 h-4" /> Limpar Registros Locais
                 </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Solo Section */}
-                <div className="bg-blue-950/40 p-8 rounded-[3rem] border border-blue-800">
+                {/* Solo Local Records */}
+                <div className="bg-[#001d3d]/40 p-8 rounded-[3rem] border border-blue-900 shadow-2xl">
                   <div className="flex items-center gap-4 mb-8">
                     <div className="p-3 bg-green-500/20 rounded-2xl">
                       <Clock className="w-6 h-6 text-green-400" />
                     </div>
-                    <h2 className="text-2xl font-black">Recordes Solo</h2>
+                    <h2 className="text-2xl font-black uppercase tracking-tighter italic">Solo Offline</h2>
                   </div>
                   
                   <div className="space-y-4">
                     {ranking.solo.length > 0 ? (
-                      ranking.solo.sort((a,b) => a.bestTime - b.bestTime).slice(0, 10).map((entry, i) => (
-                        <div key={i} className="flex items-center justify-between p-4 bg-blue-900/50 rounded-2xl border border-blue-800">
+                      ranking.solo.sort((a,b) => a.bestTime - b.bestTime).slice(0, 5).map((entry, i) => (
+                        <div key={i} className="flex items-center justify-between p-4 bg-blue-900/30 rounded-2xl border border-blue-800/50">
                           <div className="flex items-center gap-3">
-                            <span className="font-black text-blue-500">{i + 1}º</span>
+                            <span className="font-black text-blue-500 text-lg">#{i + 1}</span>
                             <div>
-                              <p className="font-bold">{entry.nickname}</p>
-                              <p className="text-[10px] text-blue-400 uppercase font-bold tracking-widest">{entry.difficulty}</p>
+                              <p className="font-bold text-white">{entry.nickname}</p>
+                              <p className="text-[9px] text-blue-400 uppercase font-black tracking-widest">{entry.difficulty}</p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="text-green-400 font-black text-xl">{entry.bestTime}s</p>
-                            <p className="text-[8px] text-blue-500 font-bold uppercase tracking-tighter">{entry.attempts} tentativas</p>
+                            <p className="text-green-400 font-black text-2xl">{entry.bestTime}s</p>
+                            <p className="text-[8px] text-blue-500 font-black uppercase tracking-tighter">{entry.attempts} TENTATIVAS</p>
                           </div>
                         </div>
                       ))
@@ -277,24 +318,24 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeCha
                   </div>
                 </div>
 
-                {/* Multiplayer Section */}
-                <div className="bg-blue-950/40 p-8 rounded-[3rem] border border-blue-800">
+                {/* Local Multiplayer Records */}
+                <div className="bg-[#001d3d]/40 p-8 rounded-[3rem] border border-blue-900 shadow-2xl">
                   <div className="flex items-center gap-4 mb-8">
                     <div className="p-3 bg-purple-500/20 rounded-2xl">
                       <Swords className="w-6 h-6 text-purple-400" />
                     </div>
-                    <h2 className="text-2xl font-black">Multiplayer Local</h2>
+                    <h2 className="text-2xl font-black uppercase tracking-tighter italic">Versus Local</h2>
                   </div>
 
                   <div className="space-y-4">
                     {ranking.multiplayer.length > 0 ? (
-                      ranking.multiplayer.sort((a,b) => b.wins - a.wins).slice(0, 10).map((entry, i) => (
-                        <div key={i} className="flex items-center justify-between p-4 bg-blue-900/50 rounded-2xl border border-blue-800">
+                      ranking.multiplayer.sort((a,b) => b.wins - a.wins).slice(0, 5).map((entry, i) => (
+                        <div key={i} className="flex items-center justify-between p-4 bg-blue-900/30 rounded-2xl border border-blue-800/50">
                           <div className="flex items-center gap-3">
-                            <span className="font-black text-purple-500">{i + 1}º</span>
-                            <span className="font-bold text-lg">{entry.nickname}</span>
+                            <span className="font-black text-purple-500 text-lg">#{i + 1}</span>
+                            <span className="font-bold text-white">{entry.nickname}</span>
                           </div>
-                          <div className="bg-purple-600/20 text-purple-400 px-4 py-1 rounded-full font-black text-sm border border-purple-500/30">
+                          <div className="bg-purple-600/20 text-purple-400 px-4 py-1.5 rounded-xl font-black text-xs border border-purple-500/30">
                             {entry.wins} VITÓRIAS
                           </div>
                         </div>
@@ -308,6 +349,11 @@ export function Ranking({ ranking, globalRanking, loadingGlobal, mode, onModeCha
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+      
+      {/* Background Decorative Grid/Dots */}
+      <div className="fixed inset-0 pointer-events-none -z-50 overflow-hidden opacity-20">
+         <div className="absolute w-full h-full bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:40px_40px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
       </div>
     </div>
   );
