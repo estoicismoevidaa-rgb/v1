@@ -77,8 +77,10 @@ export async function subscribeToLobby(callback: (users: any[], messages: any[])
   const channelId = 'global-lobby';
   
   // Cleanup
-  const existing = (supabase as any).getChannels?.().find((c: any) => c.name === channelId);
-  if (existing) supabase.removeChannel(existing);
+  const existing = (supabase as any).getChannels?.().find((c: any) => c.topic === `realtime:${channelId}` || c.name === channelId);
+  if (existing) {
+    await supabase.removeChannel(existing);
+  }
 
   lobbyCallback = callback;
   lobbyChannel = supabase.channel(channelId);
@@ -154,8 +156,10 @@ export async function sendLobbyMessage(text: string): Promise<void> {
 
 export async function subscribeToRoomChat(roomId: string, callback: (messages: any[]) => void): Promise<() => void> {
   const channelId = `chat:${roomId}`;
-  const existing = (supabase as any).getChannels?.().find((c: any) => c.name === channelId);
-  if (existing) supabase.removeChannel(existing);
+  const existing = (supabase as any).getChannels?.().find((c: any) => c.topic === `realtime:${channelId}` || c.name === channelId);
+  if (existing) {
+    await supabase.removeChannel(existing);
+  }
 
   roomMessages = []; // Clear for new room
   roomMessagesCallback = callback;
@@ -228,9 +232,9 @@ export async function subscribeToRoom(roomId: string, callback: (room: GameRoom)
   const channelId = `room-signal:${roomId}`;
   
   // Cleanup any existing channel with this ID in this client
-  const existingChannel = (supabase as any).getChannels?.().find((c: any) => c.name === channelId);
+  const existingChannel = (supabase as any).getChannels?.().find((c: any) => c.topic === `realtime:${channelId}` || c.name === channelId);
   if (existingChannel) {
-    supabase.removeChannel(existingChannel).catch(() => {});
+    await supabase.removeChannel(existingChannel);
   }
 
   const channel = supabase.channel(channelId, {
@@ -511,18 +515,26 @@ export async function joinRoom(roomId: string, player: Player): Promise<void> {
         .eq('id', roomId);
         
       // Broadcast force refresh
-      const sigId = `room-signal:${roomId}`;
-      const channel = supabase.channel(sigId);
-      channel.subscribe((status: string) => {
-        if (status === 'SUBSCRIBED') {
-          channel.send({
-            type: 'broadcast',
-            event: 'force_refresh',
-            payload: {}
-          });
-          setTimeout(() => supabase.removeChannel(channel), 1000);
-        }
-      });
+      if (activeRoomChannel) {
+        activeRoomChannel.send({
+          type: 'broadcast',
+          event: 'force_refresh',
+          payload: {}
+        });
+      } else {
+        const sigId = `room-signal:${roomId}`;
+        const channel = supabase.channel(sigId);
+        channel.subscribe((status: string) => {
+          if (status === 'SUBSCRIBED') {
+            channel.send({
+              type: 'broadcast',
+              event: 'force_refresh',
+              payload: {}
+            });
+            setTimeout(() => supabase.removeChannel(channel), 1000);
+          }
+        });
+      }
     }
   } else {
     // Broadcast fallback for non-DB mode
@@ -539,18 +551,26 @@ export async function joinRoom(roomId: string, player: Player): Promise<void> {
 // Delete room permanently
 export async function deleteRoom(roomId: string): Promise<void> {
   await supabase.from('rooms').delete().eq('id', roomId);
-  const sigId = `room-signal:${roomId}`;
-  const channel = supabase.channel(sigId);
-  channel.subscribe((status: string) => {
-    if (status === 'SUBSCRIBED') {
-      channel.send({
-        type: 'broadcast',
-        event: 'room_deleted',
-        payload: { roomId }
-      });
-      setTimeout(() => supabase.removeChannel(channel), 1000);
-    }
-  });
+  if (activeRoomChannel) {
+    activeRoomChannel.send({
+      type: 'broadcast',
+      event: 'room_deleted',
+      payload: { roomId }
+    });
+  } else {
+    const sigId = `room-signal:${roomId}`;
+    const channel = supabase.channel(sigId);
+    channel.subscribe((status: string) => {
+      if (status === 'SUBSCRIBED') {
+        channel.send({
+          type: 'broadcast',
+          event: 'room_deleted',
+          payload: { roomId }
+        });
+        setTimeout(() => supabase.removeChannel(channel), 1000);
+      }
+    });
+  }
 }
 
 // Leave room
@@ -572,18 +592,26 @@ export async function leaveRoom(roomId: string, userId: string): Promise<void> {
     }
     
     // Broadcast force refresh
-    const sigId = `room-signal:${roomId}`;
-    const channel = supabase.channel(sigId);
-    channel.subscribe((status: string) => {
-      if (status === 'SUBSCRIBED') {
-        channel.send({
-          type: 'broadcast',
-          event: 'force_refresh',
-          payload: {}
-        });
-        setTimeout(() => supabase.removeChannel(channel), 1000);
-      }
-    });
+    if (activeRoomChannel) {
+      activeRoomChannel.send({
+        type: 'broadcast',
+        event: 'force_refresh',
+        payload: {}
+      });
+    } else {
+      const sigId = `room-signal:${roomId}`;
+      const channel = supabase.channel(sigId);
+      channel.subscribe((status: string) => {
+        if (status === 'SUBSCRIBED') {
+          channel.send({
+            type: 'broadcast',
+            event: 'force_refresh',
+            payload: {}
+          });
+          setTimeout(() => supabase.removeChannel(channel), 1000);
+        }
+      });
+    }
   }
 }
 
@@ -662,7 +690,7 @@ export async function findOrCreatePublicRoom(maxPlayers: number, difficulty: str
 // Submit a solo time to global ranking
 export async function submitSoloTime(userId: string, username: string, difficulty: string, time: number, errors: number): Promise<void> {
   const isDBActive = await checkTableExistence();
-  if (!isDBActive) return;
+  if (!isDBActive || userId.startsWith('user_')) return;
 
   // 1. Ensure profile exists
   const { data: profile } = await supabase.from('profiles').select('uid').eq('uid', userId).maybeSingle();
@@ -687,7 +715,6 @@ export async function submitSoloTime(userId: string, username: string, difficult
     uid: userId,
     games_played: (stats?.games_played || 0) + 1,
     total_points: (stats?.total_points || 0) + points,
-    solo_points: (stats?.solo_points || 0) + points,
     last_played_at: new Date().toISOString()
   };
 
@@ -714,7 +741,7 @@ export async function submitSoloTime(userId: string, username: string, difficult
 // Submit online points to global ranking
 export async function submitOnlineScore(userId: string, points: number, username: string = 'Jogador', isSolo: boolean = false): Promise<void> {
   const isDBActive = await checkTableExistence();
-  if (!isDBActive) return;
+  if (!isDBActive || userId.startsWith('user_')) return;
 
   // 1. Ensure profile exists
   const { data: profile } = await supabase.from('profiles').select('uid').eq('uid', userId).maybeSingle();
@@ -738,11 +765,9 @@ export async function submitOnlineScore(userId: string, points: number, username
     last_played_at: new Date().toISOString()
   };
 
-  if (isSolo) {
-    updates.solo_points = (stats?.solo_points || 0) + points;
-  } else {
-    updates.versus_points = (stats?.versus_points || 0) + points;
-  }
+  // Ignore solo_points and versus_points for now to prevent PGRST204 errors
+  // since the external database doesn't have these columns.
+  updates.total_points = (stats?.total_points || 0) + points;
 
   if (stats && stats.uid) {
     const { error } = await supabase.from('stats').update(updates).eq('uid', userId);
@@ -766,8 +791,6 @@ export async function getGlobalRanking(mode: 'solo' | 'versus' | 'total' = 'solo
     .select(`
       uid,
       total_points,
-      solo_points,
-      versus_points,
       best_time_easy,
       games_played,
       profiles (
@@ -775,7 +798,7 @@ export async function getGlobalRanking(mode: 'solo' | 'versus' | 'total' = 'solo
         avatar_url
       )
     `)
-    .order(orderField, { ascending: false })
+    .order('total_points', { ascending: false })
     .limit(limit);
 
   if (error || !data) {
